@@ -19,8 +19,8 @@ train_models <- function(data, grouping="Vowel", formants=c("F1", "F2"),
     dplyr::group_by_(.dots = grouping, add=add_groups) %>%
     dplyr::select_(.dots = formants) %>%
     tidyr::nest() %>%
-    mutate(data = map(data, as.matrix),
-           model = map(data,
-                       ~ list(mu    = apply(., 2, mean),
-                              Sigma = cov(.))))
+    mutate(data = purrr::map(data, as.matrix),
+           model = purrr::map(data,
+                              ~ list(mu    = apply(., 2, mean),
+                                     Sigma = cov(.))))
 }
