@@ -71,53 +71,6 @@ levels(nsp_vows$Vowel)
 # Helper functions {.tabset .tabset-fade}
 Click the tabs below to show the source code for each function.
 
-## Make variance-covariance matrix
-```{r covar2d}
-# make a 2D variance-covariance matrix 
-covar2D = function(dim1, dim2, cov12) {
-  matrix(c(dim1, cov12,
-           cov12, dim2),
-         ncol = 2)
-}
-```
-
-
-## Calculate KL divergence between bivariate Gaussians
-```{r kl-divergence-for-multivariate-normals}
-# function to calculate the KL divergence between two bivariate Gaussians
-KL.bvnorm <- function(
-  # distributional parameters for bivariate Gaussian 1
-  mu1, 
-  sigma1,
-  # distributional parameters for bivariate Gaussian 2
-  mu2, 
-  sigma2
-  ) 
-{
-  require(psych)
-
-  # variance-covariance matrix for Gaussian 1
-  Sigma1 <- covar2D(dim1 = sigma1[1], 
-                    dim2 = sigma1[2], 
-                    cov12 = sigma1[3])
-
-  # variance-covariance matrix for Gaussian 2
-  Sigma2 <- covar2D(dim1 = sigma2[1], 
-                    dim2 = sigma2[2], 
-                    cov12 = sigma2[3])
-
-  ## ------------------
-  # SHOULD THE LOG BE BASE 2 ???
-  kl <- .5 * (log2(det(Sigma2) / det(Sigma1)) - 
-          dim(Sigma1)[1] + 
-          tr(solve(Sigma2)%*%Sigma1) +
-          t(mu2-mu1) %*% solve(Sigma2) %*% (mu2-mu1)
-        )
-        
-  return(kl)
-}
-```
-
 
 ## Calculate category probability based on specified distributional statistics
 ```{r get-category-probability}
