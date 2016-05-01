@@ -1,12 +1,16 @@
 Package: nspvowels
 Title: Dialect, gender, and talker analysis of Nationwide Speech Project vowels
 Version: 0.0.0.9000
-Authors@R: c(person("Dave", "Kleinschmidt", email = "dave.f.kleinschmidt", role = c("aut", "cre")),
-             person("Kodi", "Weatherholtz", email = "kweatherholtz@gmail.com", role = c("aut", "cre")),
-             person("T. Florian", "Jaeger", email = "fjaeger@ur.rochester.edu", role = "aut"))
-Description:
-  Analyzing the influence of talker identity, gender, and dialect on vowel F1/F2
-  data from hVd word productions in the Nationwide Speech Project corpus.
-Depends: R (>= 3.2.3)
+Authors@R: as.person(c(
+  "Dave Kleinschmidt <dave.f.kleinschmidt@gmail.com> [aut, cre]",
+  "Kodi Weatherholtz <kweatherholtz@gmail.com> [aut]",
+  "T. Florian Jaeger <fjaeger@ur.rochester.edu> [aut]"
+  ))
+Description: Analyzing the influence of talker identity, gender, and dialect
+    on vowel F1/F2 data from hVd word productions in the Nationwide Speech Project
+    corpus.
+Depends:
+    R (>= 3.2.3)
 License: MIT
 LazyData: true
+RoxygenNote: 5.0.1
