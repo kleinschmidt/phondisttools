@@ -12,10 +12,19 @@
 #'   (default: c("F1", "F2"))
 #' @param add_groups add `grouping` to existing groups, or overwrite (default TRUE)
 #'
+#' @return A data frame like for summarise, with columns for grouping factor, plus
+#'   list columns `data` (the matrix used to train the model) and `model`. `model$mu`
+#'   is the mean, and `model$Sigma` is the covariance matrix.  If `add_groups==TRUE`,
+#'   original grouping will be maintained.
+#'
 #' @export
 train_models <- function(data, grouping="Vowel", formants=c("F1", "F2"),
                          add_groups=TRUE) {
-  data %>%
+
+  existing_groups <- data %>% groups()
+
+  models <-
+    data %>%
     dplyr::group_by_(.dots = grouping, add=add_groups) %>%
     dplyr::select_(.dots = formants) %>%
     tidyr::nest() %>%
@@ -23,4 +32,11 @@ train_models <- function(data, grouping="Vowel", formants=c("F1", "F2"),
            model = purrr::map(data,
                               ~ list(mu    = apply(., 2, mean),
                                      Sigma = cov(.))))
+
+  ## if training groups were added, restore the original groups
+  if (add_groups) {
+    models %>% group_by_(.dots = existing_groups)
+  } else {
+    models
+  }
 }
