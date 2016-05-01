@@ -26,6 +26,9 @@ knitr::opts_chunk$set(cache = TRUE,
 
 # Data initialization
 ```{r data-initialization}
+
+devtools::load_all()
+
 # load relevant packages
 library(dplyr)
 library(tidyr)
@@ -47,8 +50,7 @@ theme_1 <- theme_bw() +
 
 
 # load hVd vowel data from Nationwide Speech Project
-user <- "kweatherholtz"
-nsp_vows <- readRDS(paste0("/Users/", user, "/Dropbox/vowel-dist-learn/data/NSP_vowel_data_hVd_words.RDS"))
+data('nsp_vows', package='nspvowels')
 
 # add Lobanov-normalized (z-scored) F1 and F2 values
 nsp_vows <- nsp_vows %>%
