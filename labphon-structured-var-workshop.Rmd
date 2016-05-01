@@ -1,0 +1,32 @@
+# Labphon workshop abstract
+
+Listeners need to cope with variability across talkers for successful speech perception. At one leve, this can be framed as a problem of statistical inference: in order to infer a talker's intended category from observed cues, the listener needs to know the distribution of cues for each category. But these distributions vary across talkers.
+
+<!-- missing connection here -->
+
+Not only can listeners benefit from picking up on the strucutre in talker variability, but at a basic level the __kind__ of variability across talkers determines what kind of strategy is best suited to coping with it.  For instance, when every talker varies in idiosyncratic ways, the best you can do is to adapt to each talker individually, not drawing on specific experience with any other particular talker or group.  However, when talkers vary in __structured__ ways, the best thing to do is to draw on experience with other _similar_ talkers when adapting to an unfamiliar talker.
+
+At this point very little quantitative information is available on what kind of structure is present in variability across talkers [notably except @Chodroff2015]. We explore what kind of structure there is in the variability across talkers in F1 and F2 for English vowels, based on isolated productions of hVd words collected in the Nationwide Speech Project [@Clopper2005]. This corpus contains productions from 8 talkers (4 male and 4 female) each from 6 major dialect regions of the United States: 
+New England, Mid-Atlantic, North, Midland, South, and West [see @Clopper2005 for a map of these regions].
+
+Our goal is to begin to quantify how much structure there is in variation across talkers at different, partially overlapping levels of grouping. We consider three ways of grouping talkers: at the individual talker level, at the gender level, and at the dialect level. We ask what the consequences would be of ignoring each of these potential ways of grouping talkers, using two measures.
+
+1. How much distributions of cues (F1 and F2) diverge when different grouping levels are considered. KL divergence: the "cost" (in bits) of encoding the cue distribution of a particular grouping level using the overall or marginal cue distribution.
+2. The comprehension cost: probability of correct recognition of individual tokens based on classifiers trained on different grouping levels.
+
+Questions:
+
+1. Does knowing a particular talker's own distributions provide any benefit on top of knowing group-level distributions?
+2. Does knowing dialect provide any benefit on top of knowing gender, or nothing at all?
+3. How does normalization (Lobanov) affect the utility of knowing gender?
+
+# Results
+
+1. Individual talker's cue distributions are more specific than the overall distributions for their gender+dialect group (higher KL divergence from marginal), and knowing talker-specific distributions provides a substantial increase over knowing only gender+dialect distributions in probability of correct recognition. This is especially true for crowded (mid and low) regions of the vowel space. 
+2. Nevertheless, knowing dialect also provides a substantial boost in comprehension performance., although this is more variable across vowels.
+
+# Conclusion
+
+Dialect is informative, above and beyond gender, about cue distributions of individual talkers. But listeners would still benefit from adapting to talker-specific cue distributions.
+
+An important caveat: we've evaluated this using isolated productions of minimal set words. On the one hand, it's possible that during normal comprehension, the presence of information from the lexicon and other, neighboring segments would mitigate the effects of not knowing a particular talker's distributions. On the other hand, it's also possible that during running speech distribution of all categories become more overlapping and harder to tease apart, which might _increase_ the benefit of knowing the current talker's distributions as well as possible.
