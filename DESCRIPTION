@@ -10,7 +10,10 @@ Description: Analyzing the influence of talker identity, gender, and dialect
     on vowel F1/F2 data from hVd word productions in the Nationwide Speech Project
     corpus.
 Depends:
-    R (>= 3.2.3)
+    R (>= 3.2.3),
+    purrr,
+    dplyr,
+    tidyr
 License: MIT
 LazyData: true
 RoxygenNote: 5.0.1
