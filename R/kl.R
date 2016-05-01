@@ -58,3 +58,12 @@ KL.bvnorm <- function(
   return(kl)
 }
 
+#' Compute KL divergence between two models
+#'
+#' @param mod1 Model, a list with fields mu and Sigma
+#' @param mod2
+#'
+#' @export
+KL_mods <- function(mod1, mod2) {
+  KL.bvnorm(mod1$mu, mod1$Sigma, mod2$mu, mod2$Sigma)
+}

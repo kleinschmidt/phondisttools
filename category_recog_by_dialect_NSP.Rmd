@@ -147,198 +147,32 @@ The NSP hVd vowel corpus only contains acoustic measurements for the first two f
 
 ## raw F~1~xF~2~ distributional statistics
 ```{r generative-model-parameters}
-speaker_model <- nsp_vows %>%
-  group_by(Talker, Vowel) %>%
-  summarise(
-    F1.mean = mean(F1),
-    F2.mean = mean(F2),
-    F1.var = var(F1),
-    F2.var = var(F2),
-    F1.F2.covar = cov(F1,F2)
-  )
 
-gender_model <- nsp_vows %>%
-  group_by(Sex, Vowel) %>%
-  summarise(
-    F1.mean = mean(F1),
-    F2.mean = mean(F2),
-    F1.var = var(F1),
-    F2.var = var(F2),
-    F1.F2.covar = cov(F1,F2)
-  )
+speaker_model <- nsp_vows %>% group_by(Talker) %>% train_models()
+gender_model <- nsp_vows %>% group_by(Sex) %>% train_models()
+dialect_model <- nsp_vows %>% group_by(Dialect) %>% train_models()
+genderByDialect_model <- nsp_vows %>% group_by(Sex, Dialect) %>% train_models()
+marginal_model <- nsp_vows %>% group_by() %>% train_models()
 
-dialect_model <- nsp_vows %>%
-  group_by(Dialect, Vowel) %>%
-  summarise(
-    F1.mean = mean(F1),
-    F2.mean = mean(F2),
-    F1.var = var(F1),
-    F2.var = var(F2),
-    F1.F2.covar = cov(F1,F2)
-  )
-
-genderByDialect_model <- nsp_vows %>%
-  group_by(Sex, Dialect, Vowel) %>%
-  summarise(
-    F1.mean = mean(F1),
-    F2.mean = mean(F2),
-    F1.var = var(F1),
-    F2.var = var(F2),
-    F1.F2.covar = cov(F1,F2)
-  )
-
-marginal_model <- nsp_vows %>%
-  group_by(Vowel) %>%
-  summarise(
-    F1.mean = mean(F1),
-    F2.mean = mean(F2),
-    F1.var = var(F1),
-    F2.var = var(F2),
-    F1.F2.covar = cov(F1,F2)
-  )
 ```
 
 ## Lobanov-normalized (z-scored) F~1~xF~2~ distributional statistics
 ```{r}
-speaker_model_Ln <- nsp_vows %>%
-  group_by(Talker, Vowel) %>%
-  summarise(
-    F1.mean = mean(F1.Lobanov),
-    F2.mean = mean(F2.Lobanov),
-    F1.var = var(F1.Lobanov),
-    F2.var = var(F2.Lobanov),
-    F1.F2.covar = cov(F1.Lobanov, F2.Lobanov)
-  )
 
-gender_model_Ln <- nsp_vows %>%
-  group_by(Sex, Vowel) %>%
-  summarise(
-    F1.mean = mean(F1.Lobanov),
-    F2.mean = mean(F2.Lobanov),
-    F1.var = var(F1.Lobanov),
-    F2.var = var(F2.Lobanov),
-    F1.F2.covar = cov(F1.Lobanov, F2.Lobanov)
-  )
+train_models_lobanov <- function(d, ...) 
+  train_models(d, formants = c("F1.Lobanov", "F2.Lobanov"), ...)
 
-dialect_model_Ln <- nsp_vows %>%
-  group_by(Dialect, Vowel) %>%
-  summarise(
-    F1.mean = mean(F1.Lobanov),
-    F2.mean = mean(F2.Lobanov),
-    F1.var = var(F1.Lobanov),
-    F2.var = var(F2.Lobanov),
-    F1.F2.covar = cov(F1.Lobanov, F2.Lobanov)
-  )
+speaker_model_Ln <- 
+  nsp_vows %>% group_by(Talker) %>% train_models_lobanov()
+gender_model_Ln <-
+  nsp_vows %>% group_by(Sex) %>% train_models_lobanov()
+dialect_model_Ln <-
+  nsp_vows %>% group_by(Dialect) %>% train_models_lobanov()
+genderByDialect_model_Ln <-
+  nsp_vows %>% group_by(Sex, Dialect) %>% train_models_lobanov()
+marginal_model_Ln <-
+  nsp_vows %>% group_by() %>% train_models_lobanov()
 
-genderByDialect_model_Ln <- nsp_vows %>%
-  group_by(Sex, Dialect, Vowel) %>%
-  summarise(
-    F1.mean = mean(F1.Lobanov),
-    F2.mean = mean(F2.Lobanov),
-    F1.var = var(F1.Lobanov),
-    F2.var = var(F2.Lobanov),
-    F1.F2.covar = cov(F1.Lobanov, F2.Lobanov)
-  )
-
-marginal_model_Ln <- nsp_vows %>%
-  group_by(Vowel) %>%
-  summarise(
-    F1.mean = mean(F1.Lobanov),
-    F2.mean = mean(F2.Lobanov),
-    F1.var = var(F1.Lobanov),
-    F2.var = var(F2.Lobanov),
-    F1.F2.covar = cov(F1.Lobanov, F2.Lobanov)
-  )
-
-```
-
-## prepare DFs for KL-divergence analysis
-Create data frames that contain specific combinations of marginal and conditional distributional statistics, as required by the KL-divergence function.
-
-```{r}
-speaker_vs_marginal <- 
-  left_join(speaker_model %>%
-              setNames(., c(names(.)[c(1:2)], 
-                            paste0(names(.)[-c(1:2)],".speaker"))
-              ), 
-            marginal_model %>%
-              setNames(., c(names(.)[c(1)], 
-                            paste0(names(.)[-c(1)],".marginal"))
-              ))
-
-gender_vs_marginal <- 
-  left_join(gender_model %>%
-              setNames(., c(names(.)[c(1:2)], 
-                            paste0(names(.)[-c(1:2)],".gender"))
-              ), 
-            marginal_model %>%
-              setNames(., c(names(.)[c(1)], 
-                            paste0(names(.)[-c(1)],".marginal"))
-              ))
-
-dialect_vs_marginal <- 
-  left_join(dialect_model %>%
-              setNames(., c(names(.)[c(1:2)], 
-                            paste0(names(.)[-c(1:2)],".dialect"))
-              ), 
-            marginal_model %>%
-              setNames(., c(names(.)[c(1)], 
-                            paste0(names(.)[-c(1)],".marginal"))
-              ))
-
-genderByDialect_vs_marginal <- 
-  left_join(genderByDialect_model %>%
-              setNames(., c(names(.)[c(1:3)], 
-                            paste0(names(.)[-c(1:3)],".genderByDialect"))
-              ), 
-            marginal_model %>%
-              setNames(., c(names(.)[c(1)], 
-                            paste0(names(.)[-c(1)],".marginal"))
-              ))
-
-
-## ----------------------------------
-##  Lobanov-normalized
-## ----------------------------------
-speaker_vs_marginal_Ln <- 
-  left_join(speaker_model_Ln %>%
-              setNames(., c(names(.)[c(1:2)], 
-                            paste0(names(.)[-c(1:2)],".speaker.Ln"))
-              ), 
-            marginal_model_Ln %>%
-              setNames(., c(names(.)[c(1)], 
-                            paste0(names(.)[-c(1)],".marginal.Ln"))
-              ))
-
-gender_vs_marginal_Ln <- 
-  left_join(gender_model_Ln %>%
-              setNames(., c(names(.)[c(1:2)], 
-                            paste0(names(.)[-c(1:2)],".gender.Ln"))
-              ), 
-            marginal_model_Ln %>%
-              setNames(., c(names(.)[c(1)], 
-                            paste0(names(.)[-c(1)],".marginal.Ln"))
-              ))
-
-dialect_vs_marginal_Ln <- 
-  left_join(dialect_model_Ln %>%
-              setNames(., c(names(.)[c(1:2)], 
-                            paste0(names(.)[-c(1:2)],".dialect.Ln"))
-              ), 
-            marginal_model_Ln %>%
-              setNames(., c(names(.)[c(1)], 
-                            paste0(names(.)[-c(1)],".marginal.Ln"))
-              ))
-
-genderByDialect_vs_marginal_Ln <- 
-  left_join(genderByDialect_model_Ln %>%
-              setNames(., c(names(.)[c(1:3)], 
-                            paste0(names(.)[-c(1:3)],".genderByDialect.Ln"))
-              ), 
-            marginal_model_Ln %>%
-              setNames(., c(names(.)[c(1)], 
-                            paste0(names(.)[-c(1)],".marginal.Ln"))
-              ))
 
 ```
 
@@ -347,203 +181,29 @@ genderByDialect_vs_marginal_Ln <-
 
 ## Analysis code
 ```{r KL-divergence}
-## KL divergence between talker-specific and marginal F1xF2 distributions
-KL_talker <- speaker_vs_marginal %>%
-  rowwise() %>%
-  do(
-    KL = KL.bvnorm(
-      # parameters for multivariate Gaussian 1
-      mu1 = c(.$F1.mean.speaker, .$F2.mean.speaker),
-      sigma1 = c(.$F1.var.speaker, .$F2.var.speaker, .$F1.F2.covar.speaker),
-      
-      # parameters for multivariate Gaussian 2
-      mu2 = c(.$F1.mean.marginal, .$F2.mean.marginal),
-      sigma2 = c(.$F1.var.marginal, .$F2.var.marginal, .$F1.F2.covar.marginal)
-    )
-  ) %>%
-  bind_cols(speaker_vs_marginal, .) %>%
-  mutate(
-    KL = as.numeric(KL),
-    KL.desc = "conditioned\non talker"
-  ) %>%
-  as.data.frame(.) 
 
-## KL divergence between gender-specific and marginal F1xF2 distributions
-KL_gender <- gender_vs_marginal %>%
-  rowwise() %>%
-  do(
-    KL = KL.bvnorm(
-      # parameters for multivariate Gaussian 1
-      mu1 = c(.$F1.mean.gender, .$F2.mean.gender),
-      sigma1 = c(.$F1.var.gender, .$F2.var.gender, .$F1.F2.covar.gender),
-      
-      # parameters for multivariate Gaussian 2
-      mu2 = c(.$F1.mean.marginal, .$F2.mean.marginal),
-      sigma2 = c(.$F1.var.marginal, .$F2.var.marginal, .$F1.F2.covar.marginal)
-    )
-  ) %>%
-  bind_cols(gender_vs_marginal, .) %>%
-  mutate(
-    KL = as.numeric(KL),
-    KL.desc = "conditioned\non gender"
-  ) %>%
-  as.data.frame(.) 
+kl_from_marginal <- function(models, description, ref_models = marginal_model) {
+  left_join(models, ref_models, by='Vowel') %>%
+    mutate(KL = map2_dbl(model.x, model.y, nspvowels::KL_mods),
+           KL.desc = description)
+}
 
-## KL divergence between dialect-specific and marginal F1xF2 distributions
-KL_dialect <- dialect_vs_marginal %>%
-  rowwise() %>%
-  do(
-    KL = KL.bvnorm(
-      # parameters for multivariate Gaussian 1
-      mu1 = c(.$F1.mean.dialect, .$F2.mean.dialect),
-      sigma1 = c(.$F1.var.dialect, .$F2.var.dialect, .$F1.F2.covar.dialect),
-      
-      # parameters for multivariate Gaussian 2
-      mu2 = c(.$F1.mean.marginal, .$F2.mean.marginal),
-      sigma2 = c(.$F1.var.marginal, .$F2.var.marginal, .$F1.F2.covar.marginal)
-    )
-  ) %>%
-  bind_cols(dialect_vs_marginal, .) %>%
-  mutate(
-    KL = as.numeric(KL),
-    KL.desc = "conditioned\non dialect"
-  ) %>%
-  as.data.frame(.) 
+KL_talker <- speaker_model %>% kl_from_marginal("conditioned\non talker")
+KL_gender <- gender_model %>% kl_from_marginal("conditioned\non gender")
+KL_dialect <- dialect_model %>% kl_from_marginal("conditioned\non dialect")
+KL_genderByDialect <- genderByDialect_model %>% kl_from_marginal("conditioned\non gender and dialect")
 
-KL_genderByDialect <- genderByDialect_vs_marginal %>%
-  rowwise() %>%
-  do(
-    KL = KL.bvnorm(
-      # parameters for multivariate Gaussian 1
-      mu1 = c(.$F1.mean.genderByDialect, .$F2.mean.genderByDialect),
-      sigma1 = c(.$F1.var.genderByDialect, 
-                 .$F2.var.genderByDialect, 
-                 .$F1.F2.covar.genderByDialect),
-      
-      # parameters for multivariate Gaussian 2
-      mu2 = c(.$F1.mean.marginal, .$F2.mean.marginal),
-      sigma2 = c(.$F1.var.marginal, .$F2.var.marginal, .$F1.F2.covar.marginal)
-    )
-  ) %>%
-  bind_cols(genderByDialect_vs_marginal, .) %>%
-  mutate(
-    KL = as.numeric(KL),
-    KL.desc = "conditioned\non gender and dialect"
-  ) %>%
-  as.data.frame(.)
+kl_from_marginal_lobanov <- 
+  function(...) kl_from_marginal(..., ref_models = marginal_model_Ln)
 
-
-## ---------------------------------
-##  Lobanov-normalized
-## ---------------------------------
-KL_talker_Ln <- speaker_vs_marginal_Ln %>%
-  rowwise() %>%
-  do(
-    KL = KL.bvnorm(
-      # parameters for multivariate Gaussian 1
-      mu1 = c(.$F1.mean.speaker.Ln, 
-              .$F2.mean.speaker.Ln),
-      sigma1 = c(.$F1.var.speaker.Ln, 
-                 .$F2.var.speaker.Ln, 
-                 .$F1.F2.covar.speaker.Ln),
-      
-      # parameters for multivariate Gaussian 2
-      mu2 = c(.$F1.mean.marginal.Ln, 
-              .$F2.mean.marginal.Ln),
-      sigma2 = c(.$F1.var.marginal.Ln, 
-                 .$F2.var.marginal.Ln, 
-                 .$F1.F2.covar.marginal.Ln)
-    )
-  ) %>%
-  bind_cols(speaker_vs_marginal, .) %>%
-  mutate(
-    KL = as.numeric(KL),
-    KL.desc = "conditioned\non talker"
-  ) %>%
-  as.data.frame(.) 
-
-
-KL_gender_Ln <- gender_vs_marginal_Ln %>%
-  rowwise() %>%
-  do(
-    KL = KL.bvnorm(
-      # parameters for multivariate Gaussian 1
-      mu1 = c(.$F1.mean.gender.Ln, 
-              .$F2.mean.gender.Ln),
-      sigma1 = c(.$F1.var.gender.Ln,
-                 .$F2.var.gender.Ln, 
-                 .$F1.F2.covar.gender.Ln),
-      
-      # parameters for multivariate Gaussian 2
-      mu2 = c(.$F1.mean.marginal.Ln, 
-              .$F2.mean.marginal.Ln),
-      sigma2 = c(.$F1.var.marginal.Ln, 
-                 .$F2.var.marginal.Ln, 
-                 .$F1.F2.covar.marginal.Ln)
-    )
-  ) %>%
-  bind_cols(gender_vs_marginal, .) %>%
-  mutate(
-    KL = as.numeric(KL),
-    KL.desc = "conditioned\non gender"
-  ) %>%
-  as.data.frame(.) 
-
-
-KL_dialect_Ln <- dialect_vs_marginal_Ln %>%
-  rowwise() %>%
-  do(
-    KL = KL.bvnorm(
-      # parameters for multivariate Gaussian 1
-      mu1 = c(.$F1.mean.dialect.Ln, 
-              .$F2.mean.dialect.Ln),
-      sigma1 = c(.$F1.var.dialect.Ln, 
-                 .$F2.var.dialect.Ln, 
-                 .$F1.F2.covar.dialect.Ln),
-      
-      # parameters for multivariate Gaussian 2
-      mu2 = c(.$F1.mean.marginal.Ln, 
-              .$F2.mean.marginal.Ln),
-      sigma2 = c(.$F1.var.marginal.Ln, 
-                 .$F2.var.marginal.Ln, 
-                 .$F1.F2.covar.marginal.Ln)
-    )
-  ) %>%
-  bind_cols(dialect_vs_marginal, .) %>%
-  mutate(
-    KL = as.numeric(KL),
-    KL.desc = "conditioned\non dialect"
-  ) %>%
-  as.data.frame(.) 
-
-
-KL_genderByDialect_Ln <- genderByDialect_vs_marginal_Ln %>%
-  rowwise() %>%
-  do(
-    KL = KL.bvnorm(
-      # parameters for multivariate Gaussian 1
-      mu1 = c(.$F1.mean.genderByDialect.Ln, 
-              .$F2.mean.genderByDialect.Ln),
-      sigma1 = c(.$F1.var.genderByDialect.Ln, 
-                 .$F2.var.genderByDialect.Ln, 
-                 .$F1.F2.covar.genderByDialect.Ln),
-      
-      # parameters for multivariate Gaussian 2
-      mu2 = c(.$F1.mean.marginal.Ln, 
-              .$F2.mean.marginal.Ln),
-      sigma2 = c(.$F1.var.marginal.Ln, 
-                 .$F2.var.marginal.Ln, 
-                 .$F1.F2.covar.marginal.Ln)
-    )
-  ) %>%
-  bind_cols(genderByDialect_vs_marginal, .) %>%
-  mutate(
-    KL = as.numeric(KL),
-    KL.desc = "conditioned\non gender and dialect"
-  ) %>%
-  as.data.frame(.)
-
-
+KL_talker_Ln <-
+  speaker_model_Ln %>% kl_from_marginal_lobanov("conditioned\non talker")
+KL_gender_Ln <-
+  gender_model_Ln %>% kl_from_marginal_lobanov("conditioned\non gender")
+KL_dialect_Ln <-
+  dialect_model_Ln %>% kl_from_marginal_lobanov("conditioned\non dialect")
+KL_genderByDialect_Ln <-
+  genderByDialect_model_Ln %>% kl_from_marginal_lobanov("conditioned\non gender and dialect")
 
 ```
 
@@ -552,13 +212,13 @@ KL_genderByDialect_Ln <- genderByDialect_vs_marginal_Ln %>%
 library(gtools)
 library(scales)
 
-KL_combined <- smartbind(KL_talker,
+KL_combined <- bind_rows(KL_talker,
                          KL_gender,
                          KL_dialect,
                          KL_genderByDialect
                          )
 
-KL_combined_Ln <- smartbind(KL_talker_Ln,
+KL_combined_Ln <- bind_rows(KL_talker_Ln,
                             KL_gender_Ln,
                             KL_dialect_Ln,
                             KL_genderByDialect_Ln
