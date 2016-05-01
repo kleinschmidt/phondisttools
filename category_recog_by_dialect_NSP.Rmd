@@ -1,0 +1,945 @@
+---
+title: "Relative Informativity of Different Socio-Indexical Factors for Vowel Categorization"
+subtitle: "An Analysis of the Nationwide Speech Corpus Vowel Data"
+author: "Kodi Weatherholtz"
+date: "April 25, 2016"
+output:
+  html_document:
+    number_sections: true
+    toc: true
+    toc_float:
+      collapsed: true
+      smooth_scroll: true
+---
+
+
+```{r preamble, cache=FALSE, warning=FALSE, echo=FALSE}
+library(knitr)
+knitr::opts_chunk$set(cache = TRUE,
+                      warning = FALSE, 
+                      message = FALSE,
+                      dev = c('png', 'pdf', 'svg'),
+                      fig.width = 9,
+                      fig.height = 3)
+```
+
+
+# Data initialization
+```{r data-initialization}
+# load relevant packages
+library(dplyr)
+library(tidyr)
+library(mvtnorm)
+library(ggplot2)
+library(ggthemes)
+library(cowplot)
+library(psych)
+library(phonR) # contains functions for vowel normalization
+library(Cairo) # for saving plots with special characters (e.g., IPA)
+
+
+theme_1 <- theme_bw() +
+  theme(panel.border = element_blank(),
+        legend.position = "top",
+        legend.background = element_rect(colour = "grey"),
+        panel.grid.major.x = element_blank(), 
+        panel.grid.minor.x = element_blank())
+
+
+# load hVd vowel data from Nationwide Speech Project
+user <- "kweatherholtz"
+nsp_vows <- readRDS(paste0("/Users/", user, "/Dropbox/vowel-dist-learn/data/NSP_vowel_data_hVd_words.RDS"))
+
+# add Lobanov-normalized (z-scored) F1 and F2 values
+nsp_vows <- nsp_vows %>%
+  group_by(Talker) %>%
+  mutate(
+    F1.Lobanov = as.numeric(normLobanov(F1)),
+    F2.Lobanov = as.numeric(normLobanov(F2)))
+```
+
+```{r}
+print.data.frame(head(nsp_vows))
+
+xtabs(~ Sex + Dialect, subset(nsp_vows, !duplicated(Talker)))
+
+levels(nsp_vows$Vowel)
+```
+
+# Helper functions {.tabset .tabset-fade}
+Click the tabs below to show the source code for each function.
+
+## Make variance-covariance matrix
+```{r covar2d}
+# make a 2D variance-covariance matrix 
+covar2D = function(dim1, dim2, cov12) {
+  matrix(c(dim1, cov12,
+           cov12, dim2),
+         ncol = 2)
+}
+```
+
+
+## Calculate KL divergence between bivariate Gaussians
+```{r kl-divergence-for-multivariate-normals}
+# function to calculate the KL divergence between two bivariate Gaussians
+KL.bvnorm <- function(
+  # distributional parameters for bivariate Gaussian 1
+  mu1, 
+  sigma1,
+  # distributional parameters for bivariate Gaussian 2
+  mu2, 
+  sigma2
+  ) 
+{
+  require(psych)
+
+  # variance-covariance matrix for Gaussian 1
+  Sigma1 <- covar2D(dim1 = sigma1[1], 
+                    dim2 = sigma1[2], 
+                    cov12 = sigma1[3])
+
+  # variance-covariance matrix for Gaussian 2
+  Sigma2 <- covar2D(dim1 = sigma2[1], 
+                    dim2 = sigma2[2], 
+                    cov12 = sigma2[3])
+
+  ## ------------------
+  # SHOULD THE LOG BE BASE 2 ???
+  kl <- .5 * (log2(det(Sigma2) / det(Sigma1)) - 
+          dim(Sigma1)[1] + 
+          tr(solve(Sigma2)%*%Sigma1) +
+          t(mu2-mu1) %*% solve(Sigma2) %*% (mu2-mu1)
+        )
+        
+  return(kl)
+}
+```
+
+
+## Calculate category probability based on specified distributional statistics
+```{r get-category-probability}
+# function for calculating probability of correct recognition 
+# under a specific model/data.frame
+
+getCategoryProbability = function(
+  data_point,           # data point for which prob under category is sought
+  model.data,           # df with the relevant multivariates for all categories
+  model.category = NULL # relevant category for which probability is sought
+) {
+  # if a specific category is specified during the call, 
+  # get probability of that category (involves recursive call 
+  # to this function)
+  if(!is.null(model.category)) {
+    p =
+      with(
+        model.data %>%
+          filter(Vowel == model.category),
+        dmvnorm(
+          data_point,
+          c(F1.mean, F2.mean),
+          covar2D(F1.var, F2.var, F1.F2.covar) # <<<<<<< here and throughout: this probably needs to be converted into a correlation?
+        )
+      )
+    
+    # posterior probability of data point under specified category, 
+    # normalized by the summed probability of the data point 
+    # under all categories
+    pp = p / sum(getCategoryProbability(data_point = data_point, 
+                                        model.data = model.data
+                                        )
+                 )
+    
+    # criterion rule: is probability of data point under specified 
+    # category greater than the probability of that data point 
+    # under any **other** category?
+    cr = ifelse(p >
+                  max(getCategoryProbability(
+                    data_point = data_point,
+                    model.data = subset(model.data, Vowel != model.category)
+                  )
+                  ),
+                1,
+                0)
+    
+    return(list(pp, cr))
+    
+    # if no category is specified during call, get vector of probabilities over
+    # each category
+  } else {                      
+    m = model.data %>%
+      rowwise() %>%
+      do(
+        p =
+          dmvnorm(
+            data_point,
+            c(.$F1.mean, .$F2.mean),
+            covar2D(.$F1.var, .$F2.var, .$F1.F2.covar)
+          )
+      ) %>%
+      ungroup() %>%
+      #summarise(p = sum(as.numeric(p)))
+      mutate(p = as.numeric(p)) # <<<<<<<<<<< return vector of probabilities to allow (i) querying of this vetor (for criterion rule) and (ii) summing of this vector for normalization
+    
+    return(m$p)
+  }
+}
+```
+
+
+# Generative model parameters {.tabset .tabset-fade}
+The NSP hVd vowel corpus only contains acoustic measurements for the first two formants. Thus, for the purposes of the current analysis, we assume vowel categories can be approximated as multivariate normal distributions in F~1~xF~2~ space. We start by identifying the parameters that define these multivariate distributions (i.e., F~1~ and F~2~ means, variances and covariance) at different levels of specificity: by talker, by gender, by dialect, by *both* gender and dialect, or marginalizing across all socio-indexical variables.
+
+## raw F~1~xF~2~ distributional statistics
+```{r generative-model-parameters}
+speaker_model <- nsp_vows %>%
+  group_by(Talker, Vowel) %>%
+  summarise(
+    F1.mean = mean(F1),
+    F2.mean = mean(F2),
+    F1.var = var(F1),
+    F2.var = var(F2),
+    F1.F2.covar = cov(F1,F2)
+  )
+
+gender_model <- nsp_vows %>%
+  group_by(Sex, Vowel) %>%
+  summarise(
+    F1.mean = mean(F1),
+    F2.mean = mean(F2),
+    F1.var = var(F1),
+    F2.var = var(F2),
+    F1.F2.covar = cov(F1,F2)
+  )
+
+dialect_model <- nsp_vows %>%
+  group_by(Dialect, Vowel) %>%
+  summarise(
+    F1.mean = mean(F1),
+    F2.mean = mean(F2),
+    F1.var = var(F1),
+    F2.var = var(F2),
+    F1.F2.covar = cov(F1,F2)
+  )
+
+genderByDialect_model <- nsp_vows %>%
+  group_by(Sex, Dialect, Vowel) %>%
+  summarise(
+    F1.mean = mean(F1),
+    F2.mean = mean(F2),
+    F1.var = var(F1),
+    F2.var = var(F2),
+    F1.F2.covar = cov(F1,F2)
+  )
+
+marginal_model <- nsp_vows %>%
+  group_by(Vowel) %>%
+  summarise(
+    F1.mean = mean(F1),
+    F2.mean = mean(F2),
+    F1.var = var(F1),
+    F2.var = var(F2),
+    F1.F2.covar = cov(F1,F2)
+  )
+```
+
+## Lobanov-normalized (z-scored) F~1~xF~2~ distributional statistics
+```{r}
+speaker_model_Ln <- nsp_vows %>%
+  group_by(Talker, Vowel) %>%
+  summarise(
+    F1.mean = mean(F1.Lobanov),
+    F2.mean = mean(F2.Lobanov),
+    F1.var = var(F1.Lobanov),
+    F2.var = var(F2.Lobanov),
+    F1.F2.covar = cov(F1.Lobanov, F2.Lobanov)
+  )
+
+gender_model_Ln <- nsp_vows %>%
+  group_by(Sex, Vowel) %>%
+  summarise(
+    F1.mean = mean(F1.Lobanov),
+    F2.mean = mean(F2.Lobanov),
+    F1.var = var(F1.Lobanov),
+    F2.var = var(F2.Lobanov),
+    F1.F2.covar = cov(F1.Lobanov, F2.Lobanov)
+  )
+
+dialect_model_Ln <- nsp_vows %>%
+  group_by(Dialect, Vowel) %>%
+  summarise(
+    F1.mean = mean(F1.Lobanov),
+    F2.mean = mean(F2.Lobanov),
+    F1.var = var(F1.Lobanov),
+    F2.var = var(F2.Lobanov),
+    F1.F2.covar = cov(F1.Lobanov, F2.Lobanov)
+  )
+
+genderByDialect_model_Ln <- nsp_vows %>%
+  group_by(Sex, Dialect, Vowel) %>%
+  summarise(
+    F1.mean = mean(F1.Lobanov),
+    F2.mean = mean(F2.Lobanov),
+    F1.var = var(F1.Lobanov),
+    F2.var = var(F2.Lobanov),
+    F1.F2.covar = cov(F1.Lobanov, F2.Lobanov)
+  )
+
+marginal_model_Ln <- nsp_vows %>%
+  group_by(Vowel) %>%
+  summarise(
+    F1.mean = mean(F1.Lobanov),
+    F2.mean = mean(F2.Lobanov),
+    F1.var = var(F1.Lobanov),
+    F2.var = var(F2.Lobanov),
+    F1.F2.covar = cov(F1.Lobanov, F2.Lobanov)
+  )
+
+```
+
+## prepare DFs for KL-divergence analysis
+Create data frames that contain specific combinations of marginal and conditional distributional statistics, as required by the KL-divergence function.
+
+```{r}
+speaker_vs_marginal <- 
+  left_join(speaker_model %>%
+              setNames(., c(names(.)[c(1:2)], 
+                            paste0(names(.)[-c(1:2)],".speaker"))
+              ), 
+            marginal_model %>%
+              setNames(., c(names(.)[c(1)], 
+                            paste0(names(.)[-c(1)],".marginal"))
+              ))
+
+gender_vs_marginal <- 
+  left_join(gender_model %>%
+              setNames(., c(names(.)[c(1:2)], 
+                            paste0(names(.)[-c(1:2)],".gender"))
+              ), 
+            marginal_model %>%
+              setNames(., c(names(.)[c(1)], 
+                            paste0(names(.)[-c(1)],".marginal"))
+              ))
+
+dialect_vs_marginal <- 
+  left_join(dialect_model %>%
+              setNames(., c(names(.)[c(1:2)], 
+                            paste0(names(.)[-c(1:2)],".dialect"))
+              ), 
+            marginal_model %>%
+              setNames(., c(names(.)[c(1)], 
+                            paste0(names(.)[-c(1)],".marginal"))
+              ))
+
+genderByDialect_vs_marginal <- 
+  left_join(genderByDialect_model %>%
+              setNames(., c(names(.)[c(1:3)], 
+                            paste0(names(.)[-c(1:3)],".genderByDialect"))
+              ), 
+            marginal_model %>%
+              setNames(., c(names(.)[c(1)], 
+                            paste0(names(.)[-c(1)],".marginal"))
+              ))
+
+
+## ----------------------------------
+##  Lobanov-normalized
+## ----------------------------------
+speaker_vs_marginal_Ln <- 
+  left_join(speaker_model_Ln %>%
+              setNames(., c(names(.)[c(1:2)], 
+                            paste0(names(.)[-c(1:2)],".speaker.Ln"))
+              ), 
+            marginal_model_Ln %>%
+              setNames(., c(names(.)[c(1)], 
+                            paste0(names(.)[-c(1)],".marginal.Ln"))
+              ))
+
+gender_vs_marginal_Ln <- 
+  left_join(gender_model_Ln %>%
+              setNames(., c(names(.)[c(1:2)], 
+                            paste0(names(.)[-c(1:2)],".gender.Ln"))
+              ), 
+            marginal_model_Ln %>%
+              setNames(., c(names(.)[c(1)], 
+                            paste0(names(.)[-c(1)],".marginal.Ln"))
+              ))
+
+dialect_vs_marginal_Ln <- 
+  left_join(dialect_model_Ln %>%
+              setNames(., c(names(.)[c(1:2)], 
+                            paste0(names(.)[-c(1:2)],".dialect.Ln"))
+              ), 
+            marginal_model_Ln %>%
+              setNames(., c(names(.)[c(1)], 
+                            paste0(names(.)[-c(1)],".marginal.Ln"))
+              ))
+
+genderByDialect_vs_marginal_Ln <- 
+  left_join(genderByDialect_model_Ln %>%
+              setNames(., c(names(.)[c(1:3)], 
+                            paste0(names(.)[-c(1:3)],".genderByDialect.Ln"))
+              ), 
+            marginal_model_Ln %>%
+              setNames(., c(names(.)[c(1)], 
+                            paste0(names(.)[-c(1)],".marginal.Ln"))
+              ))
+
+```
+
+# Informativity with respect to cue distributions {.tabset .tabset-fade}
+...
+
+## Analysis code
+```{r KL-divergence}
+## KL divergence between talker-specific and marginal F1xF2 distributions
+KL_talker <- speaker_vs_marginal %>%
+  rowwise() %>%
+  do(
+    KL = KL.bvnorm(
+      # parameters for multivariate Gaussian 1
+      mu1 = c(.$F1.mean.speaker, .$F2.mean.speaker),
+      sigma1 = c(.$F1.var.speaker, .$F2.var.speaker, .$F1.F2.covar.speaker),
+      
+      # parameters for multivariate Gaussian 2
+      mu2 = c(.$F1.mean.marginal, .$F2.mean.marginal),
+      sigma2 = c(.$F1.var.marginal, .$F2.var.marginal, .$F1.F2.covar.marginal)
+    )
+  ) %>%
+  bind_cols(speaker_vs_marginal, .) %>%
+  mutate(
+    KL = as.numeric(KL),
+    KL.desc = "conditioned\non talker"
+  ) %>%
+  as.data.frame(.) 
+
+## KL divergence between gender-specific and marginal F1xF2 distributions
+KL_gender <- gender_vs_marginal %>%
+  rowwise() %>%
+  do(
+    KL = KL.bvnorm(
+      # parameters for multivariate Gaussian 1
+      mu1 = c(.$F1.mean.gender, .$F2.mean.gender),
+      sigma1 = c(.$F1.var.gender, .$F2.var.gender, .$F1.F2.covar.gender),
+      
+      # parameters for multivariate Gaussian 2
+      mu2 = c(.$F1.mean.marginal, .$F2.mean.marginal),
+      sigma2 = c(.$F1.var.marginal, .$F2.var.marginal, .$F1.F2.covar.marginal)
+    )
+  ) %>%
+  bind_cols(gender_vs_marginal, .) %>%
+  mutate(
+    KL = as.numeric(KL),
+    KL.desc = "conditioned\non gender"
+  ) %>%
+  as.data.frame(.) 
+
+## KL divergence between dialect-specific and marginal F1xF2 distributions
+KL_dialect <- dialect_vs_marginal %>%
+  rowwise() %>%
+  do(
+    KL = KL.bvnorm(
+      # parameters for multivariate Gaussian 1
+      mu1 = c(.$F1.mean.dialect, .$F2.mean.dialect),
+      sigma1 = c(.$F1.var.dialect, .$F2.var.dialect, .$F1.F2.covar.dialect),
+      
+      # parameters for multivariate Gaussian 2
+      mu2 = c(.$F1.mean.marginal, .$F2.mean.marginal),
+      sigma2 = c(.$F1.var.marginal, .$F2.var.marginal, .$F1.F2.covar.marginal)
+    )
+  ) %>%
+  bind_cols(dialect_vs_marginal, .) %>%
+  mutate(
+    KL = as.numeric(KL),
+    KL.desc = "conditioned\non dialect"
+  ) %>%
+  as.data.frame(.) 
+
+KL_genderByDialect <- genderByDialect_vs_marginal %>%
+  rowwise() %>%
+  do(
+    KL = KL.bvnorm(
+      # parameters for multivariate Gaussian 1
+      mu1 = c(.$F1.mean.genderByDialect, .$F2.mean.genderByDialect),
+      sigma1 = c(.$F1.var.genderByDialect, 
+                 .$F2.var.genderByDialect, 
+                 .$F1.F2.covar.genderByDialect),
+      
+      # parameters for multivariate Gaussian 2
+      mu2 = c(.$F1.mean.marginal, .$F2.mean.marginal),
+      sigma2 = c(.$F1.var.marginal, .$F2.var.marginal, .$F1.F2.covar.marginal)
+    )
+  ) %>%
+  bind_cols(genderByDialect_vs_marginal, .) %>%
+  mutate(
+    KL = as.numeric(KL),
+    KL.desc = "conditioned\non gender and dialect"
+  ) %>%
+  as.data.frame(.)
+
+
+## ---------------------------------
+##  Lobanov-normalized
+## ---------------------------------
+KL_talker_Ln <- speaker_vs_marginal_Ln %>%
+  rowwise() %>%
+  do(
+    KL = KL.bvnorm(
+      # parameters for multivariate Gaussian 1
+      mu1 = c(.$F1.mean.speaker.Ln, 
+              .$F2.mean.speaker.Ln),
+      sigma1 = c(.$F1.var.speaker.Ln, 
+                 .$F2.var.speaker.Ln, 
+                 .$F1.F2.covar.speaker.Ln),
+      
+      # parameters for multivariate Gaussian 2
+      mu2 = c(.$F1.mean.marginal.Ln, 
+              .$F2.mean.marginal.Ln),
+      sigma2 = c(.$F1.var.marginal.Ln, 
+                 .$F2.var.marginal.Ln, 
+                 .$F1.F2.covar.marginal.Ln)
+    )
+  ) %>%
+  bind_cols(speaker_vs_marginal, .) %>%
+  mutate(
+    KL = as.numeric(KL),
+    KL.desc = "conditioned\non talker"
+  ) %>%
+  as.data.frame(.) 
+
+
+KL_gender_Ln <- gender_vs_marginal_Ln %>%
+  rowwise() %>%
+  do(
+    KL = KL.bvnorm(
+      # parameters for multivariate Gaussian 1
+      mu1 = c(.$F1.mean.gender.Ln, 
+              .$F2.mean.gender.Ln),
+      sigma1 = c(.$F1.var.gender.Ln,
+                 .$F2.var.gender.Ln, 
+                 .$F1.F2.covar.gender.Ln),
+      
+      # parameters for multivariate Gaussian 2
+      mu2 = c(.$F1.mean.marginal.Ln, 
+              .$F2.mean.marginal.Ln),
+      sigma2 = c(.$F1.var.marginal.Ln, 
+                 .$F2.var.marginal.Ln, 
+                 .$F1.F2.covar.marginal.Ln)
+    )
+  ) %>%
+  bind_cols(gender_vs_marginal, .) %>%
+  mutate(
+    KL = as.numeric(KL),
+    KL.desc = "conditioned\non gender"
+  ) %>%
+  as.data.frame(.) 
+
+
+KL_dialect_Ln <- dialect_vs_marginal_Ln %>%
+  rowwise() %>%
+  do(
+    KL = KL.bvnorm(
+      # parameters for multivariate Gaussian 1
+      mu1 = c(.$F1.mean.dialect.Ln, 
+              .$F2.mean.dialect.Ln),
+      sigma1 = c(.$F1.var.dialect.Ln, 
+                 .$F2.var.dialect.Ln, 
+                 .$F1.F2.covar.dialect.Ln),
+      
+      # parameters for multivariate Gaussian 2
+      mu2 = c(.$F1.mean.marginal.Ln, 
+              .$F2.mean.marginal.Ln),
+      sigma2 = c(.$F1.var.marginal.Ln, 
+                 .$F2.var.marginal.Ln, 
+                 .$F1.F2.covar.marginal.Ln)
+    )
+  ) %>%
+  bind_cols(dialect_vs_marginal, .) %>%
+  mutate(
+    KL = as.numeric(KL),
+    KL.desc = "conditioned\non dialect"
+  ) %>%
+  as.data.frame(.) 
+
+
+KL_genderByDialect_Ln <- genderByDialect_vs_marginal_Ln %>%
+  rowwise() %>%
+  do(
+    KL = KL.bvnorm(
+      # parameters for multivariate Gaussian 1
+      mu1 = c(.$F1.mean.genderByDialect.Ln, 
+              .$F2.mean.genderByDialect.Ln),
+      sigma1 = c(.$F1.var.genderByDialect.Ln, 
+                 .$F2.var.genderByDialect.Ln, 
+                 .$F1.F2.covar.genderByDialect.Ln),
+      
+      # parameters for multivariate Gaussian 2
+      mu2 = c(.$F1.mean.marginal.Ln, 
+              .$F2.mean.marginal.Ln),
+      sigma2 = c(.$F1.var.marginal.Ln, 
+                 .$F2.var.marginal.Ln, 
+                 .$F1.F2.covar.marginal.Ln)
+    )
+  ) %>%
+  bind_cols(genderByDialect_vs_marginal, .) %>%
+  mutate(
+    KL = as.numeric(KL),
+    KL.desc = "conditioned\non gender and dialect"
+  ) %>%
+  as.data.frame(.)
+
+
+
+```
+
+## Graphing code
+```{r, fig.height = 8}
+library(gtools)
+library(scales)
+
+KL_combined <- smartbind(KL_talker,
+                         KL_gender,
+                         KL_dialect,
+                         KL_genderByDialect
+                         )
+
+KL_combined_Ln <- smartbind(KL_talker_Ln,
+                            KL_gender_Ln,
+                            KL_dialect_Ln,
+                            KL_genderByDialect_Ln
+                            )
+
+KL_legend_title <- "Difference between the marginal F1xF2 distribution and the\ncorresponding distribution _______________"
+
+p_kl <- KL_combined %>%
+  filter(!is.na(KL)) %>%
+  ggplot(aes(x = Vowel,
+             y = KL,
+             colour = Vowel, fill = Vowel,
+             group = KL.desc, alpha = KL.desc)) +
+  stat_summary(fun.y = "mean", geom = "bar", 
+               position = position_dodge(.9)) +
+  stat_summary(fun.data = "mean_cl_boot", geom = "pointrange", 
+               position = position_dodge(.9),
+               alpha = 1, colour = "grey30") +
+  stat_summary(fun.y = "mean", geom = "point", 
+               position = position_dodge(.9),
+               alpha = 1,
+               show.legend = FALSE) +
+  scale_y_continuous("KL divergence (in bits)", expand = c(0,0)) +
+  scale_alpha_manual(KL_legend_title, values = c(.4, .6, .8, .95)) +
+  guides(fill = FALSE, colour = FALSE,
+         alpha = guide_legend(title.position = "top")) +
+  coord_cartesian(ylim = c(0,6.3)) +
+  geom_rangeframe(colour = "black", alpha = 1) +
+  theme_1
+
+p_kl_ln <- KL_combined_Ln %>%
+  filter(!is.na(KL)) %>%
+  ggplot(aes(x = Vowel,
+             y = KL,
+             colour = Vowel, fill = Vowel,
+             group = KL.desc, alpha = KL.desc)) +
+  stat_summary(fun.y = "mean", geom = "bar", 
+               position = position_dodge(.9)) +
+  stat_summary(fun.data = "mean_cl_boot", geom = "pointrange", 
+               position = position_dodge(.9),
+               alpha = 1, colour = "grey30") +
+  stat_summary(fun.y = "mean", geom = "point", 
+               position = position_dodge(.9),
+               alpha = 1,
+               show.legend = FALSE) +
+  scale_y_continuous("KL divergence (in bits)", expand = c(0,0)) +
+  scale_alpha_manual(KL_legend_title, values = c(.4, .6, .8, .95)) +
+  guides(fill = FALSE, colour = FALSE,
+         alpha = guide_legend(title.position = "top")) +
+  coord_cartesian(ylim = c(0,6.3)) +
+  geom_rangeframe(colour = "black", alpha = 1) +
+  theme_1
+```
+
+
+## Graphs
+```{r, fig.height = 8}
+grobs <- ggplotGrob(p_kl + theme(legend.position="bottom"))$grobs
+legend_b <- grobs[[which(sapply(grobs, function(x) x$name) == "guide-box")]]
+
+plot_grid(legend_b, 
+          p_kl + 
+            theme(legend.position = "none"), 
+          p_kl_ln + 
+            theme(legend.position = "none"), 
+          labels = c("", 
+                     "A (input = F1xF2 (Hz))", 
+                     "B (input = Lobanov-normalized F1xF2)"),
+          label_size = 13,
+          hjust = 0,
+          vjust = 0,
+          nrow = 3, 
+          rel_heights = c(.2, 1, 1))
+
+```
+
+
+
+# Informativity with respect to categorization {.tabset .tabset-fade}
+Here we calculate the probability of correctly categorizing each vowel token in the `nsp_vows` dataframe under different generative models:
+
+**Generative models:**
+
+1. marginal model: <br> p(vowel category | F~1~xF~2~) 
+
+2. dialect-specific model: <br> p(vowel category | F~1~xF~2~, dialect)
+
+3. gender-specific model: <br> p(vowel category | F~1~xF~2~, gender)
+
+4. dialect- and gender-specific model: <br> p(vowel category | F~1~xF~2~, gender, dialect)
+
+5. talker-specific model: <br> p(vowel category | F~1~xF~2~, talker identity)
+
+**Assumptions:**
+
+- categorization = selecting category with highest posterior probability, given the input
+- uniform prior probability across vowels
+- perfect knowledge of talker- or group-specific distributional statistics
+- perfect certainty about gender/dialect/talker identity
+
+## Analysis code
+```{r prob-correct-under-each-generative-model}
+## ----------------------------------------------
+# calculate probability and log-odds correct for each 
+# vowel token under the different models and store 
+# the results in the same data.frame
+## ----------------------------------------------
+
+d <- nsp_vows %>% 
+  rowwise() %>%
+  do(
+    ModelTalker = 
+      getCategoryProbability(
+        data_point = c(.$F1, .$F2),
+        model.data = subset(speaker_model, Talker == .$Talker),
+        model.category = .$Vowel
+      ),
+    ModelGender = 
+      getCategoryProbability(
+        data_point = c(.$F1, .$F2),
+        model.data = subset(gender_model, Sex == .$Sex),
+        model.category = .$Vowel
+      ),
+    ModelDialect = 
+      getCategoryProbability(
+        data_point = c(.$F1, .$F2),
+        model.data = subset(dialect_model, Dialect == .$Dialect),
+        model.category = .$Vowel
+      ),
+    ModelGenderByDialect = 
+      getCategoryProbability(
+        data_point = c(.$F1, .$F2),
+        model.data = subset(genderByDialect_model, 
+                            Sex == .$Sex & Dialect == .$Dialect),
+        model.category = .$Vowel
+      ),
+    ModelMarginal = 
+      getCategoryProbability(
+        data_point = c(.$F1, .$F2),
+        model.data = marginal_model,
+        model.category = .$Vowel
+      ),
+    
+    # Lobanov-normalized
+    ModelTalker_Ln = 
+      getCategoryProbability(
+        data_point = c(.$F1.Lobanov, .$F2.Lobanov),
+        model.data = subset(speaker_model_Ln, Talker == .$Talker),
+        model.category = .$Vowel
+      ),
+    ModelGender_Ln = 
+      getCategoryProbability(
+        data_point = c(.$F1.Lobanov, .$F2.Lobanov),
+        model.data = subset(gender_model_Ln, Sex == .$Sex),
+        model.category = .$Vowel
+      ),
+    ModelDialect_Ln = 
+      getCategoryProbability(
+        data_point = c(.$F1.Lobanov, .$F2.Lobanov),
+        model.data = subset(dialect_model_Ln, Dialect == .$Dialect),
+        model.category = .$Vowel
+      ),
+    ModelGenderByDialect_Ln = 
+      getCategoryProbability(
+        data_point = c(.$F1.Lobanov, .$F2.Lobanov),
+        model.data = subset(genderByDialect_model_Ln, 
+                            Sex == .$Sex & Dialect == .$Dialect),
+        model.category = .$Vowel
+      ),
+    ModelMarginal_Ln = 
+      getCategoryProbability(
+        data_point = c(.$F1.Lobanov, .$F2.Lobanov),
+        model.data = marginal_model_Ln,
+        model.category = .$Vowel
+      )
+  ) %>%
+  mutate(
+    ModelTalker.prob_of_category = unlist(ModelTalker)[[1]],
+    ModelTalker.correct_recog = unlist(ModelTalker)[[2]],
+    #ModelTalker.logodds_of_category = qlogis(ModelTalker.prob_of_category),
+
+    ModelGenderByDialect.prob_of_category = unlist(ModelGenderByDialect)[[1]],
+    ModelGenderByDialect.correct_recog = unlist(ModelGenderByDialect)[[2]],
+                  
+    ModelGender.prob_of_category = unlist(ModelGender)[[1]],
+    ModelGender.correct_recog = unlist(ModelGender)[[2]],
+         
+    ModelDialect.prob_of_category = unlist(ModelDialect)[[1]],
+    ModelDialect.correct_recog = unlist(ModelDialect)[[2]],
+    
+    ModelMarginal.prob_of_category = unlist(ModelMarginal)[[1]],
+    ModelMarginal.correct_recog = unlist(ModelMarginal)[[2]],
+    
+    # Lobanov-normalized
+    ModelTalker_Ln.prob_of_category = unlist(ModelTalker_Ln)[[1]],
+    ModelTalker_Ln.correct_recog = unlist(ModelTalker_Ln)[[2]],
+
+    ModelGenderByDialect_Ln.prob_of_category = unlist(ModelGenderByDialect_Ln)[[1]],
+    ModelGenderByDialect_Ln.correct_recog = unlist(ModelGenderByDialect_Ln)[[2]],
+                  
+    ModelGender_Ln.prob_of_category = unlist(ModelGender_Ln)[[1]],
+    ModelGender_Ln.correct_recog = unlist(ModelGender_Ln)[[2]],
+         
+    ModelDialect_Ln.prob_of_category = unlist(ModelDialect_Ln)[[1]],
+    ModelDialect_Ln.correct_recog = unlist(ModelDialect_Ln)[[2]],
+    
+    ModelMarginal_Ln.prob_of_category = unlist(ModelMarginal_Ln)[[1]],
+    ModelMarginal_Ln.correct_recog = unlist(ModelMarginal_Ln)[[2]]
+    
+  ) %>%
+  bind_cols(nsp_vows, .) 
+```
+
+## Graphing code
+```{r, fig.height = 8}
+## --------------------------------- 
+# define variables for quick conversion of factor levels
+
+gen.model.hz = c("ModelMarginal.correct_recog",
+                "ModelDialect.correct_recog",
+                "ModelGender.correct_recog",
+                "ModelGenderByDialect.correct_recog",
+                "ModelTalker.correct_recog")
+
+gen.model.lobanov = c("ModelMarginal_Ln.correct_recog",
+                      "ModelDialect_Ln.correct_recog",
+                      "ModelGender_Ln.correct_recog",
+                      "ModelGenderByDialect_Ln.correct_recog",
+                      "ModelTalker_Ln.correct_recog")
+
+gen.model.t = c("marginal",
+                "conditioned\non dialect",
+                "conditioned\non gender",
+                "conditioned\non dialect and gender",
+                "conditioned\non talker identity")
+
+## --------------------------------- 
+# average probability of recognizing each vowel (using criterion rule)
+# under various generative models
+## --------------------------------- 
+
+p_hz <- d %>%
+  select(Talker, Vowel, one_of(gen.model.hz)) %>%
+  gather(
+    key = generative_model, 
+    value = correct_recog, 
+    ends_with("correct_recog")
+    ) %>%
+  mutate(
+    generative_model = plyr::mapvalues(generative_model, 
+                                       from = gen.model.hz,
+                                       to = gen.model.t),
+    generative_model = factor(generative_model, 
+                              levels = gen.model.t)
+    ) %>% 
+  ggplot(aes(x = Vowel, 
+             y = correct_recog, 
+             fill = Vowel,
+             colour = Vowel,
+             group = generative_model,
+             #colour = generative_model, 
+             alpha = generative_model)) + 
+  stat_summary(fun.y = "mean", geom = "bar", 
+               position = position_dodge(.9)) +
+  stat_summary(fun.data = "mean_cl_boot", geom = "pointrange", 
+               position = position_dodge(.9),
+               alpha = 1, colour = "grey30") +
+  stat_summary(fun.y = "mean", geom = "point", 
+               position = position_dodge(.9),
+               aes(colour = Vowel),
+               alpha = 1,
+               show.legend = FALSE) +
+  scale_y_continuous("Probability of correct recognition") +
+  scale_alpha_manual(values = c(.2, .4, .6, .8, .95)) +
+  guides(fill = FALSE, colour = FALSE) +
+  coord_cartesian(ylim = c(.38, 1)) +
+  geom_rangeframe(colour = "black", alpha = 1) +
+  theme_1
+
+
+p_Ln <- d %>%
+  select(Talker, Vowel, one_of(gen.model.lobanov)) %>%
+  gather(
+    key = generative_model, 
+    value = correct_recog, 
+    ends_with("correct_recog")
+    ) %>%
+  mutate(
+    generative_model = plyr::mapvalues(generative_model, 
+                                       from = gen.model.lobanov,
+                                       to = gen.model.t),
+    generative_model = factor(generative_model, 
+                              levels = gen.model.t)
+    ) %>% 
+  ggplot(aes(x = Vowel, 
+             y = correct_recog, 
+             fill = Vowel,
+             colour = Vowel,
+             group = generative_model,
+             alpha = generative_model)) + 
+  stat_summary(fun.y = "mean", geom = "bar", 
+               position = position_dodge(.9)) +
+  stat_summary(fun.data = "mean_cl_boot", geom = "pointrange", 
+               position = position_dodge(.9),
+               alpha = 1, colour = "grey30") +
+  stat_summary(fun.y = "mean", geom = "point", 
+               position = position_dodge(.9),
+               aes(colour = Vowel),
+               alpha = 1,
+               show.legend = FALSE) +
+  scale_y_continuous("Probability of correct recognition") +
+  scale_alpha_manual(values = c(.2, .4, .6, .8, .95)) +
+  guides(fill = FALSE, colour = FALSE) +
+  coord_cartesian(ylim = c(.38, 1)) +
+  geom_rangeframe(colour = "black", alpha = 1) +
+  theme_1
+```
+
+
+## Graphs
+```{r, fig.height = 8}
+grobs <- ggplotGrob(p_hz + theme(legend.position="bottom"))$grobs
+legend_b <- grobs[[which(sapply(grobs, function(x) x$name) == "guide-box")]]
+
+plot_grid(legend_b, 
+          p_hz + theme(legend.position = "none"), 
+          p_Ln + theme(legend.position = "none"), 
+          labels = c("", 
+                     "A (input = F1xF2 (Hz))", 
+                     "B (input = Lobanov-normalized F1xF2)"),
+          label_size = 13,
+          hjust = 0,
+          vjust = 0.5,
+          nrow = 3, 
+          rel_heights = c(.2, 1, 1))
+
+```
+
+
