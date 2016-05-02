@@ -2,5 +2,6 @@
 
 export(KL.bvnorm)
 export(KL_mods)
+export(classify_mods)
 export(covar2D)
 export(train_models)
