@@ -327,39 +327,35 @@ Here we calculate the probability of correctly categorizing each vowel token in 
 # the results in the same data.frame
 ## ----------------------------------------------
 
-talker_class <-
-  nsp_vows %>%
-  classify_mods(speaker_model) %>%
-  mutate(model = 'talker')
+class_hz <-
+  map2(c('talker',
+         'gender',
+         'dialect',
+         'genderByDialect',
+         'marginal'),
+       list(speaker_model,
+            gender_model,
+            dialect_model,
+            genderByDialect_model,
+            marginal_model),
+       ~ classify_mods(nsp_vows, .y) %>% mutate(model = .x)) %>%
+  bind_rows()
 
-gender_class <-
-  nsp_vows %>%
-  classify_mods(gender_model) %>%
-  mutate(model = 'gender')
+class_Ln <-
+  map2(c('talker',
+         'gender',
+         'dialect',
+         'genderByDialect',
+         'marginal'),
+       list(speaker_model_Ln,
+            gender_model_Ln,
+            dialect_model_Ln,
+            genderByDialect_model_Ln,
+            marginal_model_Ln),
+       ~ classify_mods(nsp_vows, .y) %>% mutate(model = .x)) %>%
+  bind_rows()
 
-dialect_class <-
-  nsp_vows %>%
-  classify_mods(dialect_model) %>%
-  mutate(model = 'dialect')
 
-genderByDialect_class <-
-  nsp_vows %>%
-  classify_mods(genderByDialect_model) %>%
-  mutate(model = 'genderByDialect')
-
-## requires a hack to create a dummy grouping variable.
-marginal_class <-
-  nsp_vows %>%
-  mutate(dummy=1) %>%
-  classify_mods(marginal_model %>% mutate(dummy=1) %>% group_by(dummy)) %>%
-  mutate(model = 'marginal',
-         dummy = NULL)
-
-class_hz <- bind_rows(talker_class,
-                      gender_class,
-                      dialect_class,
-                      genderByDialect_class,
-                      marginal_class)
 
 ```
 
@@ -368,20 +364,18 @@ class_hz <- bind_rows(talker_class,
 ## --------------------------------- 
 # define variables for quick conversion of factor levels
 
-gen.model.t = c("marginal",
-                "conditioned\non dialect",
-                "conditioned\non gender",
-                "conditioned\non dialect and gender",
-                "conditioned\non talker identity")
-
-
 model_names <- data_frame(model = c('marginal',
                                     'dialect',
                                     'gender',
                                     'genderByDialect',
                                     'talker'),
-                          generative_model = factor(gen.model.t,
-                                                    levels = gen.model.t))
+                          generative_model = 
+                            c("marginal",
+                              "conditioned\non dialect",
+                              "conditioned\non gender",
+                              "conditioned\non dialect and gender",
+                              "conditioned\non talker identity")) %>%
+  mutate(generative_model = factor(generative_model, levels=generative_model))
 
 
 ## --------------------------------- 
@@ -390,8 +384,8 @@ model_names <- data_frame(model = c('marginal',
 ## --------------------------------- 
 
 p_hz <- class_hz %>%
-  rename(correct_recog = correct) %>%
-  left_join(model_names)
+  mutate(correct_recog = as.numeric(correct)) %>%
+  left_join(model_names) %>%
   ggplot(aes(x = Vowel, 
              y = correct_recog, 
              fill = Vowel,
@@ -417,20 +411,9 @@ p_hz <- class_hz %>%
   theme_1
 
 
-p_Ln <- d %>%
-  select(Talker, Vowel, one_of(gen.model.lobanov)) %>%
-  gather(
-    key = generative_model, 
-    value = correct_recog, 
-    ends_with("correct_recog")
-    ) %>%
-  mutate(
-    generative_model = plyr::mapvalues(generative_model, 
-                                       from = gen.model.lobanov,
-                                       to = gen.model.t),
-    generative_model = factor(generative_model, 
-                              levels = gen.model.t)
-    ) %>% 
+p_Ln <- class_Ln %>%
+  mutate(correct_recog = as.numeric(correct)) %>%
+  left_join(model_names) %>%
   ggplot(aes(x = Vowel, 
              y = correct_recog, 
              fill = Vowel,
