@@ -17,6 +17,7 @@ classify_mods <- function(data, models,
                           formants=names(models$model[[1]]$mu)) {
 
   model_groups <- groups(models)
+  data <- data %>% group_by_(.dots = model_groups)
 
   ## make a named list of vowel models for each group
   model_lists <-
@@ -28,10 +29,18 @@ classify_mods <- function(data, models,
   ## in `mvnorm`
   ## 
   ## (THe downside is that unnest doesn't want to hold onto the token likelihoods...
-  data %>%
-    group_by_(.dots=model_groups) %>%
-    nest() %>%
-    left_join(model_lists) %>%
+  if (is.null(model_groups)) {
+    ## no grouping variables: simulate effects of nest + left_bind
+    data_and_models <- bind_cols(data_frame(data = list(data)),
+                                            model_lists)
+  } else {
+    data_and_models <- 
+      data %>%
+      nest() %>%
+      left_join(model_lists)
+  }
+
+  data_and_models %>%
     mutate(formants = map(data, ~ select_(., .dots=formants) %>% as.matrix()),
            lhoods = map2(models, formants,
                          function(ms, f) map(ms, 
