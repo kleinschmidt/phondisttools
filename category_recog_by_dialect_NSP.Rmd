@@ -1,7 +1,9 @@
 ---
 title: "Relative Informativity of Different Socio-Indexical Factors for Vowel Categorization"
 subtitle: "An Analysis of the Nationwide Speech Corpus Vowel Data"
-author: "Kodi Weatherholtz"
+author:
+- "Kodi Weatherholtz"
+- "(Modified by Dave Kleinschmidt)"
 date: "April 25, 2016"
 output:
   html_document:
@@ -27,8 +29,6 @@ knitr::opts_chunk$set(cache = TRUE,
 # Data initialization
 ```{r data-initialization}
 
-devtools::load_all()
-
 # load relevant packages
 library(dplyr)
 library(tidyr)
@@ -50,6 +50,7 @@ theme_1 <- theme_bw() +
 
 
 # load hVd vowel data from Nationwide Speech Project
+devtools::load_all()
 data('nsp_vows', package='nspvowels')
 
 # add Lobanov-normalized (z-scored) F1 and F2 values
@@ -67,80 +68,6 @@ xtabs(~ Sex + Dialect, subset(nsp_vows, !duplicated(Talker)))
 
 levels(nsp_vows$Vowel)
 ```
-
-# Helper functions {.tabset .tabset-fade}
-Click the tabs below to show the source code for each function.
-
-
-## Calculate category probability based on specified distributional statistics
-```{r get-category-probability}
-# function for calculating probability of correct recognition 
-# under a specific model/data.frame
-
-getCategoryProbability = function(
-  data_point,           # data point for which prob under category is sought
-  model.data,           # df with the relevant multivariates for all categories
-  model.category = NULL # relevant category for which probability is sought
-) {
-  # if a specific category is specified during the call, 
-  # get probability of that category (involves recursive call 
-  # to this function)
-  if(!is.null(model.category)) {
-    p =
-      with(
-        model.data %>%
-          filter(Vowel == model.category),
-        dmvnorm(
-          data_point,
-          c(F1.mean, F2.mean),
-          covar2D(F1.var, F2.var, F1.F2.covar) # <<<<<<< here and throughout: this probably needs to be converted into a correlation?
-        )
-      )
-    
-    # posterior probability of data point under specified category, 
-    # normalized by the summed probability of the data point 
-    # under all categories
-    pp = p / sum(getCategoryProbability(data_point = data_point, 
-                                        model.data = model.data
-                                        )
-                 )
-    
-    # criterion rule: is probability of data point under specified 
-    # category greater than the probability of that data point 
-    # under any **other** category?
-    cr = ifelse(p >
-                  max(getCategoryProbability(
-                    data_point = data_point,
-                    model.data = subset(model.data, Vowel != model.category)
-                  )
-                  ),
-                1,
-                0)
-    
-    return(list(pp, cr))
-    
-    # if no category is specified during call, get vector of probabilities over
-    # each category
-  } else {                      
-    m = model.data %>%
-      rowwise() %>%
-      do(
-        p =
-          dmvnorm(
-            data_point,
-            c(.$F1.mean, .$F2.mean),
-            covar2D(.$F1.var, .$F2.var, .$F1.F2.covar)
-          )
-      ) %>%
-      ungroup() %>%
-      #summarise(p = sum(as.numeric(p)))
-      mutate(p = as.numeric(p)) # <<<<<<<<<<< return vector of probabilities to allow (i) querying of this vetor (for criterion rule) and (ii) summing of this vector for normalization
-    
-    return(m$p)
-  }
-}
-```
-
 
 # Generative model parameters {.tabset .tabset-fade}
 The NSP hVd vowel corpus only contains acoustic measurements for the first two formants. Thus, for the purposes of the current analysis, we assume vowel categories can be approximated as multivariate normal distributions in F~1~xF~2~ space. We start by identifying the parameters that define these multivariate distributions (i.e., F~1~ and F~2~ means, variances and covariance) at different levels of specificity: by talker, by gender, by dialect, by *both* gender and dialect, or marginalizing across all socio-indexical variables.
