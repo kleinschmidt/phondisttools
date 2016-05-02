@@ -1,3 +1,4 @@
+library(dplyr)                          # just for %>%
 ## Training and evaluating models
 
 #' Train models on specified grouping variable.
@@ -35,7 +36,7 @@ train_models <- function(data, grouping="Vowel", formants=c("F1", "F2"),
 
   ## if training groups were added, restore the original groups
   if (add_groups) {
-    models %>% group_by_(.dots = existing_groups)
+    models %>% dplyr::group_by_(.dots = existing_groups)
   } else {
     models
   }

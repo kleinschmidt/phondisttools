@@ -1,4 +1,8 @@
-model_lhood <- function(mod, dat) dmvnorm(dat, mod$mu, mod$Sigma)
+library(purrr)
+library(dplyr)
+library(tidyr)
+
+model_lhood <- function(mod, dat) mvtnorm::dmvnorm(dat, mod$mu, mod$Sigma)
 
 #' Use trained models to classify observed formant values
 #'

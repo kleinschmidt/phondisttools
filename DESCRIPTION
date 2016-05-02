@@ -13,7 +13,8 @@ Depends:
     R (>= 3.2.3),
     purrr,
     dplyr,
-    tidyr
+    tidyr,
+    mvtnorm
 License: MIT
 LazyData: true
 RoxygenNote: 5.0.1
