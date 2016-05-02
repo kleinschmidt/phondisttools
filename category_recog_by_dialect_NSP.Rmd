@@ -327,109 +327,40 @@ Here we calculate the probability of correctly categorizing each vowel token in 
 # the results in the same data.frame
 ## ----------------------------------------------
 
-d <- nsp_vows %>% 
-  rowwise() %>%
-  do(
-    ModelTalker = 
-      getCategoryProbability(
-        data_point = c(.$F1, .$F2),
-        model.data = subset(speaker_model, Talker == .$Talker),
-        model.category = .$Vowel
-      ),
-    ModelGender = 
-      getCategoryProbability(
-        data_point = c(.$F1, .$F2),
-        model.data = subset(gender_model, Sex == .$Sex),
-        model.category = .$Vowel
-      ),
-    ModelDialect = 
-      getCategoryProbability(
-        data_point = c(.$F1, .$F2),
-        model.data = subset(dialect_model, Dialect == .$Dialect),
-        model.category = .$Vowel
-      ),
-    ModelGenderByDialect = 
-      getCategoryProbability(
-        data_point = c(.$F1, .$F2),
-        model.data = subset(genderByDialect_model, 
-                            Sex == .$Sex & Dialect == .$Dialect),
-        model.category = .$Vowel
-      ),
-    ModelMarginal = 
-      getCategoryProbability(
-        data_point = c(.$F1, .$F2),
-        model.data = marginal_model,
-        model.category = .$Vowel
-      ),
-    
-    # Lobanov-normalized
-    ModelTalker_Ln = 
-      getCategoryProbability(
-        data_point = c(.$F1.Lobanov, .$F2.Lobanov),
-        model.data = subset(speaker_model_Ln, Talker == .$Talker),
-        model.category = .$Vowel
-      ),
-    ModelGender_Ln = 
-      getCategoryProbability(
-        data_point = c(.$F1.Lobanov, .$F2.Lobanov),
-        model.data = subset(gender_model_Ln, Sex == .$Sex),
-        model.category = .$Vowel
-      ),
-    ModelDialect_Ln = 
-      getCategoryProbability(
-        data_point = c(.$F1.Lobanov, .$F2.Lobanov),
-        model.data = subset(dialect_model_Ln, Dialect == .$Dialect),
-        model.category = .$Vowel
-      ),
-    ModelGenderByDialect_Ln = 
-      getCategoryProbability(
-        data_point = c(.$F1.Lobanov, .$F2.Lobanov),
-        model.data = subset(genderByDialect_model_Ln, 
-                            Sex == .$Sex & Dialect == .$Dialect),
-        model.category = .$Vowel
-      ),
-    ModelMarginal_Ln = 
-      getCategoryProbability(
-        data_point = c(.$F1.Lobanov, .$F2.Lobanov),
-        model.data = marginal_model_Ln,
-        model.category = .$Vowel
-      )
-  ) %>%
-  mutate(
-    ModelTalker.prob_of_category = unlist(ModelTalker)[[1]],
-    ModelTalker.correct_recog = unlist(ModelTalker)[[2]],
-    #ModelTalker.logodds_of_category = qlogis(ModelTalker.prob_of_category),
+talker_class <-
+  nsp_vows %>%
+  classify_mods(speaker_model) %>%
+  mutate(model = 'talker')
 
-    ModelGenderByDialect.prob_of_category = unlist(ModelGenderByDialect)[[1]],
-    ModelGenderByDialect.correct_recog = unlist(ModelGenderByDialect)[[2]],
-                  
-    ModelGender.prob_of_category = unlist(ModelGender)[[1]],
-    ModelGender.correct_recog = unlist(ModelGender)[[2]],
-         
-    ModelDialect.prob_of_category = unlist(ModelDialect)[[1]],
-    ModelDialect.correct_recog = unlist(ModelDialect)[[2]],
-    
-    ModelMarginal.prob_of_category = unlist(ModelMarginal)[[1]],
-    ModelMarginal.correct_recog = unlist(ModelMarginal)[[2]],
-    
-    # Lobanov-normalized
-    ModelTalker_Ln.prob_of_category = unlist(ModelTalker_Ln)[[1]],
-    ModelTalker_Ln.correct_recog = unlist(ModelTalker_Ln)[[2]],
+gender_class <-
+  nsp_vows %>%
+  classify_mods(gender_model) %>%
+  mutate(model = 'gender')
 
-    ModelGenderByDialect_Ln.prob_of_category = unlist(ModelGenderByDialect_Ln)[[1]],
-    ModelGenderByDialect_Ln.correct_recog = unlist(ModelGenderByDialect_Ln)[[2]],
-                  
-    ModelGender_Ln.prob_of_category = unlist(ModelGender_Ln)[[1]],
-    ModelGender_Ln.correct_recog = unlist(ModelGender_Ln)[[2]],
-         
-    ModelDialect_Ln.prob_of_category = unlist(ModelDialect_Ln)[[1]],
-    ModelDialect_Ln.correct_recog = unlist(ModelDialect_Ln)[[2]],
-    
-    ModelMarginal_Ln.prob_of_category = unlist(ModelMarginal_Ln)[[1]],
-    ModelMarginal_Ln.correct_recog = unlist(ModelMarginal_Ln)[[2]]
-    
-  ) %>%
-  bind_cols(nsp_vows, .) 
+dialect_class <-
+  nsp_vows %>%
+  classify_mods(dialect_model) %>%
+  mutate(model = 'dialect')
+
+genderByDialect_class <-
+  nsp_vows %>%
+  classify_mods(genderByDialect_model) %>%
+  mutate(model = 'genderByDialect')
+
+## requires a hack to create a dummy grouping variable.
+marginal_class <-
+  nsp_vows %>%
+  mutate(dummy=1) %>%
+  classify_mods(marginal_model %>% mutate(dummy=1) %>% group_by(dummy)) %>%
+  mutate(model = 'marginal',
+         dummy = NULL)
+
+class_hz <- bind_rows(talker_class,
+                      gender_class,
+                      dialect_class,
+                      genderByDialect_class,
+                      marginal_class)
+
 ```
 
 ## Graphing code
@@ -437,43 +368,30 @@ d <- nsp_vows %>%
 ## --------------------------------- 
 # define variables for quick conversion of factor levels
 
-gen.model.hz = c("ModelMarginal.correct_recog",
-                "ModelDialect.correct_recog",
-                "ModelGender.correct_recog",
-                "ModelGenderByDialect.correct_recog",
-                "ModelTalker.correct_recog")
-
-gen.model.lobanov = c("ModelMarginal_Ln.correct_recog",
-                      "ModelDialect_Ln.correct_recog",
-                      "ModelGender_Ln.correct_recog",
-                      "ModelGenderByDialect_Ln.correct_recog",
-                      "ModelTalker_Ln.correct_recog")
-
 gen.model.t = c("marginal",
                 "conditioned\non dialect",
                 "conditioned\non gender",
                 "conditioned\non dialect and gender",
                 "conditioned\non talker identity")
 
+
+model_names <- data_frame(model = c('marginal',
+                                    'dialect',
+                                    'gender',
+                                    'genderByDialect',
+                                    'talker'),
+                          generative_model = factor(gen.model.t,
+                                                    levels = gen.model.t))
+
+
 ## --------------------------------- 
 # average probability of recognizing each vowel (using criterion rule)
 # under various generative models
 ## --------------------------------- 
 
-p_hz <- d %>%
-  select(Talker, Vowel, one_of(gen.model.hz)) %>%
-  gather(
-    key = generative_model, 
-    value = correct_recog, 
-    ends_with("correct_recog")
-    ) %>%
-  mutate(
-    generative_model = plyr::mapvalues(generative_model, 
-                                       from = gen.model.hz,
-                                       to = gen.model.t),
-    generative_model = factor(generative_model, 
-                              levels = gen.model.t)
-    ) %>% 
+p_hz <- class_hz %>%
+  rename(correct_recog = correct) %>%
+  left_join(model_names)
   ggplot(aes(x = Vowel, 
              y = correct_recog, 
              fill = Vowel,
