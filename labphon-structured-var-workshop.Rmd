@@ -4,15 +4,16 @@ author:
 - Dave F. Kleinschmidt
 - Kodi Weatherholtz 
 - T. Florian Jaeger
-#bibliography: /Users/dkleinschmidt/Documents/papers/library-clean.bib
+bibliography: /Users/dkleinschmidt/Documents/papers/library-clean.bib
 csl: apa.csl
 output:
   pdf_document:
+    template: template_default.tex
     keep_tex: true
     fig_caption: true
-    #pandoc_args:
-    #- --filter
-    #- pandoc-fignos
+    pandoc_args:
+    - --filter
+    - pandoc-fignos
 geometry: margin=1in
 graphics: yes
 ---
@@ -345,7 +346,7 @@ fully talker-specific distributions).
 
 Informativity at the level of cue distributions
 =================================================
-We used the Kullback-Leibler (KL) divergence to assess the relative informativity of grouping factors with respect to cue distributions. KL divergence is an information-theoretic measure of the information lost when using one distribution (e.g., the marginal or average ditribution of acoustic cue values) to estimate another distribution (e.g., the corresponding talker- or group-specific distribution). Figure XXX shows the KL divergence (information loss in bits) when using the marginal F~1~xF~2~ distribution across all talkers in the NSP corpus to estimate the corresponding distribution conditioned on (i) dialect, (ii) gender, (iii) both dialect and gender, and (iv) talker identity. The information loss is significantly larger than zero in all cases (as indicated by the bootstrapped confidence intervals); this indicates that each of the grouping factors carries information about the distribution of F~1~xF~2~ values in the input. However, the _amount_ of information loss varies considerably across grouping factors. Talker identity carries the most information, as indicated by the relatively large KL divergence 
+We used the Kullback-Leibler (KL) divergence to assess the relative informativity of grouping factors with respect to cue distributions. KL divergence is an information-theoretic measure of the information lost when using one distribution (e.g., the marginal or average ditribution of acoustic cue values) to estimate another distribution (e.g., the corresponding talker- or group-specific distribution). Figure {@fig:kl-plots} shows the KL divergence (information loss in bits) when using the marginal F~1~xF~2~ distribution across all talkers in the NSP corpus to estimate the corresponding distribution conditioned on (i) dialect, (ii) gender, (iii) both dialect and gender, and (iv) talker identity. The information loss is significantly larger than zero in all cases (as indicated by the bootstrapped confidence intervals); this indicates that each of the grouping factors carries information about the distribution of F~1~xF~2~ values in the input. However, the _amount_ of information loss varies considerably across grouping factors. Talker identity carries the most information, as indicated by the relatively large KL divergence 
 
 ```{r kl-plots, fig.height = 3.6, fig.cap="KL divergence between marginal formant distributions and each grouping level's distribution."}
 
