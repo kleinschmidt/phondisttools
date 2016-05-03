@@ -1,53 +1,331 @@
-Labphon workshop abstract
-=========================
+---
+title: How informative is dialect about vowel distributions?
+author:
+- Kodi Weatherholtz 
+- Dave F. Kleinschmidt
+- T. Florian Jaeger
+bibliography: /Users/dkleinschmidt/Documents/papers/library-clean.bib
+csl: apa.csl
+output: pdf_document
+geometry: margin=1in
+graphics: yes
+---
+
+```{r preamble, results='hide', echo=FALSE, warning=FALSE, error=FALSE, message=FALSE}
+library(knitr)
+library(dplyr)
+library(tidyr)
+
+library(ggthemes)
+library(ggplot2)
+library(cowplot)
+library(gtools)
+library(scales)
+
+library(phonR) # contains functions for vowel normalization
+
+knitr::opts_chunk$set(cache = TRUE,
+                      warning = FALSE, 
+                      message = FALSE,
+                      dev = c('png', 'pdf'),
+                      fig.width = 9,
+                      fig.height = 3,
+                      results = 'hide',
+                      echo = FALSE)
+
+theme_1 <- theme_bw() +
+  theme(panel.border = element_blank(),
+        legend.position = "top",
+        legend.background = element_rect(colour = "grey"),
+        panel.grid.major.x = element_blank(), 
+        panel.grid.minor.x = element_blank())
+
+
+```
+
+```{r load-data}
+# load hVd vowel data from Nationwide Speech Project
+devtools::load_all()
+data('nsp_vows', package='nspvowels')
+# add Lobanov-normalized (z-scored) F1 and F2 values
+nsp_vows <- nsp_vows %>%
+  group_by(Talker) %>%
+  mutate(
+    F1.Lobanov = as.numeric(normLobanov(F1)),
+    F2.Lobanov = as.numeric(normLobanov(F2)))
+
+
+```
+
+```{r train-models}
+
+
+
+speaker_model <- nsp_vows %>% group_by(Talker) %>% train_models()
+gender_model <- nsp_vows %>% group_by(Sex) %>% train_models()
+dialect_model <- nsp_vows %>% group_by(Dialect) %>% train_models()
+genderByDialect_model <- nsp_vows %>% group_by(Sex, Dialect) %>% train_models()
+marginal_model <- nsp_vows %>% group_by() %>% train_models()
+
+train_models_lobanov <- function(d, ...) 
+  train_models(d, formants = c("F1.Lobanov", "F2.Lobanov"), ...)
+
+speaker_model_Ln <- 
+  nsp_vows %>% group_by(Talker) %>% train_models_lobanov()
+gender_model_Ln <-
+  nsp_vows %>% group_by(Sex) %>% train_models_lobanov()
+dialect_model_Ln <-
+  nsp_vows %>% group_by(Dialect) %>% train_models_lobanov()
+genderByDialect_model_Ln <-
+  nsp_vows %>% group_by(Sex, Dialect) %>% train_models_lobanov()
+marginal_model_Ln <-
+  nsp_vows %>% group_by() %>% train_models_lobanov()
+
+```
+
+```{r calculate-kl}
+kl_from_marginal <- function(models, description, ref_models = marginal_model) {
+  left_join(models, ref_models, by='Vowel') %>%
+    mutate(KL = map2_dbl(model.x, model.y, nspvowels::KL_mods),
+           KL.desc = description)
+}
+
+KL_talker <- speaker_model %>% kl_from_marginal("conditioned\non talker")
+KL_gender <- gender_model %>% kl_from_marginal("conditioned\non gender")
+KL_dialect <- dialect_model %>% kl_from_marginal("conditioned\non dialect")
+KL_genderByDialect <- genderByDialect_model %>% kl_from_marginal("conditioned\non gender and dialect")
+
+kl_from_marginal_lobanov <- 
+  function(...) kl_from_marginal(..., ref_models = marginal_model_Ln)
+
+KL_talker_Ln <-
+  speaker_model_Ln %>% kl_from_marginal_lobanov("conditioned\non talker")
+KL_gender_Ln <-
+  gender_model_Ln %>% kl_from_marginal_lobanov("conditioned\non gender")
+KL_dialect_Ln <-
+  dialect_model_Ln %>% kl_from_marginal_lobanov("conditioned\non dialect")
+KL_genderByDialect_Ln <-
+  genderByDialect_model_Ln %>% kl_from_marginal_lobanov("conditioned\non gender and dialect")
+
+
+```
+
+```{r classify}
+
+class_hz <-
+  map2(c('talker',
+         'gender',
+         'dialect',
+         'genderByDialect',
+         'marginal'),
+       list(speaker_model,
+            gender_model,
+            dialect_model,
+            genderByDialect_model,
+            marginal_model),
+       ~ classify_mods(nsp_vows, .y) %>% mutate(model = .x)) %>%
+  bind_rows()
+
+class_Ln <-
+  map2(c('talker',
+         'gender',
+         'dialect',
+         'genderByDialect',
+         'marginal'),
+       list(speaker_model_Ln,
+            gender_model_Ln,
+            dialect_model_Ln,
+            genderByDialect_model_Ln,
+            marginal_model_Ln),
+       ~ classify_mods(nsp_vows, .y) %>% mutate(model = .x)) %>%
+  bind_rows()
+
+```
+
+```{r generate-plots-kl}
+
+KL_combined <- bind_rows(KL_talker,
+                         KL_gender,
+                         KL_dialect,
+                         KL_genderByDialect
+                         )
+
+KL_combined_Ln <- bind_rows(KL_talker_Ln,
+                            KL_gender_Ln,
+                            KL_dialect_Ln,
+                            KL_genderByDialect_Ln
+                            )
+
+KL_legend_title <- "Difference between the marginal F1xF2 distribution and the\ncorresponding distribution _______________"
+
+p_kl <- KL_combined %>%
+  filter(!is.na(KL)) %>%
+  ggplot(aes(x = Vowel,
+             y = KL,
+             colour = Vowel, fill = Vowel,
+             group = KL.desc, alpha = KL.desc)) +
+  stat_summary(fun.y = "mean", geom = "bar", 
+               position = position_dodge(.9)) +
+  stat_summary(fun.data = "mean_cl_boot", geom = "pointrange", 
+               position = position_dodge(.9),
+               alpha = 1, colour = "grey30") +
+  stat_summary(fun.y = "mean", geom = "point", 
+               position = position_dodge(.9),
+               alpha = 1,
+               show.legend = FALSE) +
+  scale_y_continuous("KL divergence (in bits)", expand = c(0,0)) +
+  scale_alpha_manual(KL_legend_title, values = c(.4, .6, .8, .95)) +
+  guides(fill = FALSE, colour = FALSE,
+         alpha = guide_legend(title.position = "top")) +
+  coord_cartesian(ylim = c(0,6.3)) +
+  geom_rangeframe(colour = "black", alpha = 1) +
+  theme_1
+
+p_kl_ln <- KL_combined_Ln %>%
+  filter(!is.na(KL)) %>%
+  ggplot(aes(x = Vowel,
+             y = KL,
+             colour = Vowel, fill = Vowel,
+             group = KL.desc, alpha = KL.desc)) +
+  stat_summary(fun.y = "mean", geom = "bar", 
+               position = position_dodge(.9)) +
+  stat_summary(fun.data = "mean_cl_boot", geom = "pointrange", 
+               position = position_dodge(.9),
+               alpha = 1, colour = "grey30") +
+  stat_summary(fun.y = "mean", geom = "point", 
+               position = position_dodge(.9),
+               alpha = 1,
+               show.legend = FALSE) +
+  scale_y_continuous("KL divergence (in bits)", expand = c(0,0)) +
+  scale_alpha_manual(KL_legend_title, values = c(.4, .6, .8, .95)) +
+  guides(fill = FALSE, colour = FALSE,
+         alpha = guide_legend(title.position = "top")) +
+  coord_cartesian(ylim = c(0,6.3)) +
+  geom_rangeframe(colour = "black", alpha = 1) +
+  theme_1
+
+```
+
+```{r generate-plots-class}
+
+model_names <- data_frame(model = c('marginal',
+                                    'dialect',
+                                    'gender',
+                                    'genderByDialect',
+                                    'talker'),
+                          generative_model = 
+                            c("marginal",
+                              "conditioned\non dialect",
+                              "conditioned\non gender",
+                              "conditioned\non dialect and gender",
+                              "conditioned\non talker identity")) %>%
+  mutate(generative_model = factor(generative_model, levels=generative_model))
+
+
+## --------------------------------- 
+# average probability of recognizing each vowel (using criterion rule)
+# under various generative models
+## --------------------------------- 
+
+p_hz <- class_hz %>%
+  mutate(correct_recog = as.numeric(correct)) %>%
+  left_join(model_names) %>%
+  ggplot(aes(x = Vowel, 
+             y = correct_recog, 
+             fill = Vowel,
+             colour = Vowel,
+             group = generative_model,
+             #colour = generative_model, 
+             alpha = generative_model)) + 
+  stat_summary(fun.y = "mean", geom = "bar", 
+               position = position_dodge(.9)) +
+  stat_summary(fun.data = "mean_cl_boot", geom = "pointrange", 
+               position = position_dodge(.9),
+               alpha = 1, colour = "grey30") +
+  stat_summary(fun.y = "mean", geom = "point", 
+               position = position_dodge(.9),
+               aes(colour = Vowel),
+               alpha = 1,
+               show.legend = FALSE) +
+  scale_y_continuous("Probability of correct recognition") +
+  scale_alpha_manual(values = c(.2, .4, .6, .8, .95)) +
+  guides(fill = FALSE, colour = FALSE) +
+  coord_cartesian(ylim = c(.38, 1)) +
+  geom_rangeframe(colour = "black", alpha = 1) +
+  theme_1
+
+
+p_Ln <- class_Ln %>%
+  mutate(correct_recog = as.numeric(correct)) %>%
+  left_join(model_names) %>%
+  ggplot(aes(x = Vowel, 
+             y = correct_recog, 
+             fill = Vowel,
+             colour = Vowel,
+             group = generative_model,
+             alpha = generative_model)) + 
+  stat_summary(fun.y = "mean", geom = "bar", 
+               position = position_dodge(.9)) +
+  stat_summary(fun.data = "mean_cl_boot", geom = "pointrange", 
+               position = position_dodge(.9),
+               alpha = 1, colour = "grey30") +
+  stat_summary(fun.y = "mean", geom = "point", 
+               position = position_dodge(.9),
+               aes(colour = Vowel),
+               alpha = 1,
+               show.legend = FALSE) +
+  scale_y_continuous("Probability of correct recognition") +
+  scale_alpha_manual(values = c(.2, .4, .6, .8, .95)) +
+  guides(fill = FALSE, colour = FALSE) +
+  coord_cartesian(ylim = c(.38, 1)) +
+  geom_rangeframe(colour = "black", alpha = 1) +
+  theme_1
+
+```
 
 Listeners need to cope with variability across talkers for successful
-speech perception. At one leve, this can be framed as a problem of
+speech perception. At one level, this can be framed as a problem of
 statistical inference: in order to infer a talker's intended category
 from observed cues, the listener needs to know the distribution of cues
 for each category. But these distributions vary across talkers.
 
-<!-- missing connection here -->
-Not only can listeners benefit from picking up on the strucutre in
-talker variability, but at a basic level the **kind** of variability
-across talkers determines what kind of strategy is best suited to coping
-with it. For instance, when every talker varies in idiosyncratic ways,
-the best you can do is to adapt to each talker individually, not drawing
+The ideal adapter framework [@Kleinschmidt2015] says that the best way to
+deal with this variability is to _infer_ the current talker's cue
+distributions combining the statistics of the current speech with prior
+experience with other talkers.  Critically, this framework says that
+listeners should use any available information that's informative about
+an unfamiliar talker's cue distributions.  The __structure__ of the
+variability across talkers will determine what factors are informative.
+For instance, if talkers vary in purely idiosyncratic ways,
+the best a listener can do is to adapt to each talker individually, not drawing
 on specific experience with any other particular talker or group.
-However, when talkers vary in **structured** ways, the best thing to do
-is to draw on experience with other *similar* talkers when adapting to
+However, if talkers vary based on groups like gender or regional dialect, listeners can benefit by
+drawing on experience with other talkers from the same group when adapting to
 an unfamiliar talker.
 
-At this point very little quantitative information is available on what
-kind of structure is present in variability across talkers [notably
-except @Chodroff2015]. We explore what kind of structure there is in the
-variability across talkers and regional dialects in English vowels. We
-base our analysis on F1 and F2 measured from isolated productions of hVd
-words in the Nationwide Speech Project corpus [@Clopper2005]. This
-corpus contains productions from 8 talkers (4 male and 4 female) each
-from 6 major dialect regions of the United States: New England,
+We know that sociolinguistic grouping factors such as gender and dialect are
+informative about phonetic variation: e.g., by definition, talkers who share a dialect produce similar patterns of 
+variation. At this point, however, very little quantitative information is available
+on the __relative__ informativitity of different grouping factors [notably
+except @Chodroff2015]. Our goal is to begin to  quantify how much structure there 
+is in variation across talkers at different, partially overlapping levels of grouping. 
+We consider four ways of grouping observed category tokens: by individual talker,
+by gender, by dialect, and by both gender and dialect. We assess the informativity of 
+attending to versus ignoring these different grouping levels during speech perception. 
+Specifically, we assess informativity at two levels: 
+
+1. At the level of cue distributions: the difference between the marginal (or average) distribution across talkers and the corresponding distribution conditioned on each grouping level. 
+2. At the level of category recognition: the probability of correct recognition of individual tokens based on classifiers trained on different grouping levels.
+
+We base our analysis on the first and second formant values (F1 and F2) 
+measured from isolated productions of hVd words in the Nationwide Speech 
+Project corpus [@Clopper2005]. This corpus contains productions from 8 talkers 
+(4 male and 4 female) each from 6 major dialect regions of the United States: New England,
 Mid-Atlantic, North, Midland, South, and West [see @Clopper2005 for a
-map of these regions].
-
-Our goal is to begin to quantify how much structure there is in
-variation across talkers at different, partially overlapping levels of
-grouping. We consider three ways of grouping talkers: at the individual
-talker level, at the gender level, and at the dialect level. We ask what
-the consequences would be of ignoring each of these potential ways of
-grouping talkers, using two measures.
-
-1.  How much distributions of cues (F1 and F2) diverge when different
-    grouping levels are considered. KL divergence: the "cost" (in bits)
-    of encoding the cue distribution of a particular grouping level
-    using the overall or marginal cue distribution.
-2.  The comprehension cost: probability of correct recognition of
-    individual tokens based on classifiers trained on different grouping
-    levels.
-
-Questions:
+map of these regions]. We have three primary questions:
 
 1.  Does knowing a particular talker's own distributions provide any
-    benefit on top of knowing group-level distributions?
+    benefit on top of knowing higher-level group distributions?
 2.  Does knowing dialect provide any benefit on top of knowing gender,
     or nothing at all?
 3.  How does normalization (Lobanov) affect the utility of knowing
@@ -55,6 +333,47 @@ Questions:
 
 Results
 =======
+
+```{r kl-plots, fig.height = 8}
+
+grobs <- ggplotGrob(p_kl + theme(legend.position="bottom"))$grobs
+legend_b <- grobs[[which(sapply(grobs, function(x) x$name) == "guide-box")]]
+
+plot_grid(legend_b, 
+          p_kl + 
+            theme(legend.position = "none"), 
+          p_kl_ln + 
+            theme(legend.position = "none"), 
+          labels = c("", 
+                     "A (input = F1xF2 (Hz))", 
+                     "B (input = Lobanov-normalized F1xF2)"),
+          label_size = 13,
+          hjust = 0,
+          vjust = 0,
+          nrow = 3, 
+          rel_heights = c(.2, 1, 1))
+
+```
+
+```{r class-plots, fig.height = 8}
+grobs <- ggplotGrob(p_hz + theme(legend.position="bottom"))$grobs
+legend_b <- grobs[[which(sapply(grobs, function(x) x$name) == "guide-box")]]
+
+plot_grid(legend_b, 
+          p_hz + theme(legend.position = "none"), 
+          p_Ln + theme(legend.position = "none"), 
+          labels = c("", 
+                     "A (input = F1xF2 (Hz))", 
+                     "B (input = Lobanov-normalized F1xF2)"),
+          label_size = 13,
+          hjust = 0,
+          vjust = 0.5,
+          nrow = 3, 
+          rel_heights = c(.2, 1, 1))
+
+```
+
+
 
 1.  Individual talker's cue distributions are more specific than the
     overall distributions for their gender+dialect group (higher KL

@@ -14,7 +14,8 @@ Depends:
     purrr,
     dplyr,
     tidyr,
-    mvtnorm
+    mvtnorm,
+    psych
 License: MIT
 LazyData: true
 RoxygenNote: 5.0.1
