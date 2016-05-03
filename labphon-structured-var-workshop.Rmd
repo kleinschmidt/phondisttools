@@ -7,19 +7,22 @@ statistical inference: in order to infer a talker's intended category
 from observed cues, the listener needs to know the distribution of cues
 for each category. But these distributions vary across talkers.
 
-<!-- missing connection here -->
-Not only can listeners benefit from picking up on the strucutre in
-talker variability, but at a basic level the **kind** of variability
-across talkers determines what kind of strategy is best suited to coping
-with it. For instance, when every talker varies in idiosyncratic ways,
-the best you can do is to adapt to each talker individually, not drawing
+The ideal adapter framework [@Kleinschmidt2015] says that the best way to
+deal with this variability is to _infer_ the current talker's cue
+distributions combining the statistics of the current speech with prior
+experience with other talkers.  Critically, this framework says that
+listeners should use any available information that's informative about
+an unfamiliar talker's cue distributions.  The __structure__ of the
+variability across talkers will determine what factors are informative.
+For instance, if talkers vary in purely idiosyncratic ways,
+the best a listener can do is to adapt to each talker individually, not drawing
 on specific experience with any other particular talker or group.
-However, when talkers vary in **structured** ways, the best thing to do
-is to draw on experience with other *similar* talkers when adapting to
+However, if talkers vary based on groups like gender or regional dialect, listeners can benefit by
+drawing on experience with other talkers from the same group when adapting to
 an unfamiliar talker.
 
 At this point very little quantitative information is available on what
-kind of structure is present in variability across talkers [notably
+kind of group structure is present in variability across talkers [notably
 except @Chodroff2015]. We explore what kind of structure there is in the
 variability across talkers and regional dialects in English vowels. We
 base our analysis on F1 and F2 measured from isolated productions of hVd
