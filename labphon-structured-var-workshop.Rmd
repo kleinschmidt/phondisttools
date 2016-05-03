@@ -78,8 +78,6 @@ nsp_vows <- nsp_vows %>%
 
 ```{r train-models}
 
-
-
 speaker_model <- nsp_vows %>% group_by(Talker) %>% train_models()
 gender_model <- nsp_vows %>% group_by(Sex) %>% train_models()
 dialect_model <- nsp_vows %>% group_by(Dialect) %>% train_models()
@@ -341,17 +339,10 @@ measured from isolated productions of hVd words in the Nationwide Speech
 Project corpus [@Clopper2005]. This corpus contains productions from 8 talkers 
 (4 male and 4 female) each from 6 major dialect regions of the United States: New England,
 Mid-Atlantic, North, Midland, South, and West [see @Clopper2005 for a
-map of these regions]. We have three primary questions:
-
-1.  Does knowing a particular talker's own distributions provide any
-    benefit on top of knowing higher-level group distributions?
-2.  Does knowing dialect provide any benefit on top of knowing gender,
-    or nothing at all?
-3.  How does normalization (Lobanov) affect the utility of knowing
-    gender?
-
-Results
-=======
+map of these regions]. Our goal is to assess whether considering dialect-level
+groupings of talkers is informative, and specifically whether it is informative
+at an _intermediate_ level (between marginal- or language-wide and
+fully talker-specific distributions).
 
 ```{r kl-plots, fig.height = 3.6, fig.cap="KL divergence between marginal formant distributions and each grouping level's distribution."}
 
@@ -389,43 +380,18 @@ plot_grid(legend_b,
 
 ```
 
+We find that grouping talkers by dialect region is informative at an
+intermediate level. Dialect distributions diverge from the marginal
+cue distributions, but not as much as the talker-specific distributions do
+(KL divergence, Figure {@fig:kl-plots}). Moreover, considering both dialect
+_and_ gender provides an additional boost over gender alone.
+Similarly, comprehension is better (higher probability of correct recognition;
+Figure {@fig:class-plots}) when additionally conditioning on dialect (relative
+to marginal, and gender-only).
 
-
-1.  Individual talker's cue distributions are more specific than the
-    overall distributions for their gender+dialect group (higher KL
-    divergence from marginal), and knowing talker-specific distributions
-    provides a substantial increase over knowing only gender+dialect
-    distributions in probability of correct recognition. This is
-    especially true for crowded (mid and low) regions of the vowel
-    space.
-2.  Nevertheless, knowing dialect also provides a substantial boost in
-    comprehension performance., although this is more variable across
-    vowels.
-
-Conclusion
-==========
-
-Dialect is informative, above and beyond gender, about cue distributions
-of individual talkers. But listeners would still benefit from knowing
-talker-specific cue distributions.
-
-An important caveat: we've evaluated this using isolated productions of
-minimal set words. On the one hand, it's possible that during normal
-comprehension, the presence of information from the lexicon and other,
-neighboring segments would mitigate the effects of not knowing a
-particular talker's distributions. On the other hand, it's also possible
-that during running speech distribution of all categories become more
-overlapping and harder to tease apart, which might *increase* the
-benefit of knowing the current talker's distributions as well as
-possible.
-
-Another caveat: lumping all tokens together is not the same as having
-uncertainty about the underlying talker-specific distributions. This
-might (in principle) change our conclusions but we leave it for future
-work.
-
-In the future, we want to know how knowledge of this structure across
-talkers would affect *adaptation*. Knowing the range of variation across
-talkers provides an informative prior starting point for adaptation, but
-it's not obvious how much of a benefit this actually provides for
-English vowels.
+This shows that dialect is informative, above and beyond gender, about cue distributions
+of individual talkers. Listeners would still benefit from knowing
+talker-specific cue distributions. Future work will consider the effect of
+_uncertainty_ about talker-specific distributions at a group level, and the
+effect of incorporating this hierarchical structure into models of adaptation
+[like @Kleinschmidt2015].
