@@ -1,5 +1,287 @@
-Labphon workshop abstract
-=========================
+---
+title: How informative is dialect about vowel distributions?
+author:
+- Kodi Weatherholtz 
+- Dave F. Kleinschmidt
+- T. Florian Jaeger
+bibliography: /Users/dkleinschmidt/Documents/papers/library-clean.bib
+csl: apa.csl
+output: pdf_document
+geometry: margin=1in
+graphics: yes
+---
+
+```{r preamble, results='hide', echo=FALSE, warning=FALSE, error=FALSE, message=FALSE}
+library(knitr)
+library(dplyr)
+library(tidyr)
+
+library(ggthemes)
+library(ggplot2)
+library(cowplot)
+library(gtools)
+library(scales)
+
+library(phonR) # contains functions for vowel normalization
+
+knitr::opts_chunk$set(cache = TRUE,
+                      warning = FALSE, 
+                      message = FALSE,
+                      dev = c('png', 'pdf'),
+                      fig.width = 9,
+                      fig.height = 3,
+                      results = 'hide',
+                      echo = FALSE)
+
+theme_1 <- theme_bw() +
+  theme(panel.border = element_blank(),
+        legend.position = "top",
+        legend.background = element_rect(colour = "grey"),
+        panel.grid.major.x = element_blank(), 
+        panel.grid.minor.x = element_blank())
+
+
+```
+
+```{r load-data}
+# load hVd vowel data from Nationwide Speech Project
+devtools::load_all()
+data('nsp_vows', package='nspvowels')
+# add Lobanov-normalized (z-scored) F1 and F2 values
+nsp_vows <- nsp_vows %>%
+  group_by(Talker) %>%
+  mutate(
+    F1.Lobanov = as.numeric(normLobanov(F1)),
+    F2.Lobanov = as.numeric(normLobanov(F2)))
+
+
+```
+
+```{r train-models}
+
+
+
+speaker_model <- nsp_vows %>% group_by(Talker) %>% train_models()
+gender_model <- nsp_vows %>% group_by(Sex) %>% train_models()
+dialect_model <- nsp_vows %>% group_by(Dialect) %>% train_models()
+genderByDialect_model <- nsp_vows %>% group_by(Sex, Dialect) %>% train_models()
+marginal_model <- nsp_vows %>% group_by() %>% train_models()
+
+train_models_lobanov <- function(d, ...) 
+  train_models(d, formants = c("F1.Lobanov", "F2.Lobanov"), ...)
+
+speaker_model_Ln <- 
+  nsp_vows %>% group_by(Talker) %>% train_models_lobanov()
+gender_model_Ln <-
+  nsp_vows %>% group_by(Sex) %>% train_models_lobanov()
+dialect_model_Ln <-
+  nsp_vows %>% group_by(Dialect) %>% train_models_lobanov()
+genderByDialect_model_Ln <-
+  nsp_vows %>% group_by(Sex, Dialect) %>% train_models_lobanov()
+marginal_model_Ln <-
+  nsp_vows %>% group_by() %>% train_models_lobanov()
+
+```
+
+```{r calculate-kl}
+kl_from_marginal <- function(models, description, ref_models = marginal_model) {
+  left_join(models, ref_models, by='Vowel') %>%
+    mutate(KL = map2_dbl(model.x, model.y, nspvowels::KL_mods),
+           KL.desc = description)
+}
+
+KL_talker <- speaker_model %>% kl_from_marginal("conditioned\non talker")
+KL_gender <- gender_model %>% kl_from_marginal("conditioned\non gender")
+KL_dialect <- dialect_model %>% kl_from_marginal("conditioned\non dialect")
+KL_genderByDialect <- genderByDialect_model %>% kl_from_marginal("conditioned\non gender and dialect")
+
+kl_from_marginal_lobanov <- 
+  function(...) kl_from_marginal(..., ref_models = marginal_model_Ln)
+
+KL_talker_Ln <-
+  speaker_model_Ln %>% kl_from_marginal_lobanov("conditioned\non talker")
+KL_gender_Ln <-
+  gender_model_Ln %>% kl_from_marginal_lobanov("conditioned\non gender")
+KL_dialect_Ln <-
+  dialect_model_Ln %>% kl_from_marginal_lobanov("conditioned\non dialect")
+KL_genderByDialect_Ln <-
+  genderByDialect_model_Ln %>% kl_from_marginal_lobanov("conditioned\non gender and dialect")
+
+
+```
+
+```{r classify}
+
+class_hz <-
+  map2(c('talker',
+         'gender',
+         'dialect',
+         'genderByDialect',
+         'marginal'),
+       list(speaker_model,
+            gender_model,
+            dialect_model,
+            genderByDialect_model,
+            marginal_model),
+       ~ classify_mods(nsp_vows, .y) %>% mutate(model = .x)) %>%
+  bind_rows()
+
+class_Ln <-
+  map2(c('talker',
+         'gender',
+         'dialect',
+         'genderByDialect',
+         'marginal'),
+       list(speaker_model_Ln,
+            gender_model_Ln,
+            dialect_model_Ln,
+            genderByDialect_model_Ln,
+            marginal_model_Ln),
+       ~ classify_mods(nsp_vows, .y) %>% mutate(model = .x)) %>%
+  bind_rows()
+
+```
+
+```{r generate-plots-kl}
+
+KL_combined <- bind_rows(KL_talker,
+                         KL_gender,
+                         KL_dialect,
+                         KL_genderByDialect
+                         )
+
+KL_combined_Ln <- bind_rows(KL_talker_Ln,
+                            KL_gender_Ln,
+                            KL_dialect_Ln,
+                            KL_genderByDialect_Ln
+                            )
+
+KL_legend_title <- "Difference between the marginal F1xF2 distribution and the\ncorresponding distribution _______________"
+
+p_kl <- KL_combined %>%
+  filter(!is.na(KL)) %>%
+  ggplot(aes(x = Vowel,
+             y = KL,
+             colour = Vowel, fill = Vowel,
+             group = KL.desc, alpha = KL.desc)) +
+  stat_summary(fun.y = "mean", geom = "bar", 
+               position = position_dodge(.9)) +
+  stat_summary(fun.data = "mean_cl_boot", geom = "pointrange", 
+               position = position_dodge(.9),
+               alpha = 1, colour = "grey30") +
+  stat_summary(fun.y = "mean", geom = "point", 
+               position = position_dodge(.9),
+               alpha = 1,
+               show.legend = FALSE) +
+  scale_y_continuous("KL divergence (in bits)", expand = c(0,0)) +
+  scale_alpha_manual(KL_legend_title, values = c(.4, .6, .8, .95)) +
+  guides(fill = FALSE, colour = FALSE,
+         alpha = guide_legend(title.position = "top")) +
+  coord_cartesian(ylim = c(0,6.3)) +
+  geom_rangeframe(colour = "black", alpha = 1) +
+  theme_1
+
+p_kl_ln <- KL_combined_Ln %>%
+  filter(!is.na(KL)) %>%
+  ggplot(aes(x = Vowel,
+             y = KL,
+             colour = Vowel, fill = Vowel,
+             group = KL.desc, alpha = KL.desc)) +
+  stat_summary(fun.y = "mean", geom = "bar", 
+               position = position_dodge(.9)) +
+  stat_summary(fun.data = "mean_cl_boot", geom = "pointrange", 
+               position = position_dodge(.9),
+               alpha = 1, colour = "grey30") +
+  stat_summary(fun.y = "mean", geom = "point", 
+               position = position_dodge(.9),
+               alpha = 1,
+               show.legend = FALSE) +
+  scale_y_continuous("KL divergence (in bits)", expand = c(0,0)) +
+  scale_alpha_manual(KL_legend_title, values = c(.4, .6, .8, .95)) +
+  guides(fill = FALSE, colour = FALSE,
+         alpha = guide_legend(title.position = "top")) +
+  coord_cartesian(ylim = c(0,6.3)) +
+  geom_rangeframe(colour = "black", alpha = 1) +
+  theme_1
+
+```
+
+```{r generate-plots-class}
+
+model_names <- data_frame(model = c('marginal',
+                                    'dialect',
+                                    'gender',
+                                    'genderByDialect',
+                                    'talker'),
+                          generative_model = 
+                            c("marginal",
+                              "conditioned\non dialect",
+                              "conditioned\non gender",
+                              "conditioned\non dialect and gender",
+                              "conditioned\non talker identity")) %>%
+  mutate(generative_model = factor(generative_model, levels=generative_model))
+
+
+## --------------------------------- 
+# average probability of recognizing each vowel (using criterion rule)
+# under various generative models
+## --------------------------------- 
+
+p_hz <- class_hz %>%
+  mutate(correct_recog = as.numeric(correct)) %>%
+  left_join(model_names) %>%
+  ggplot(aes(x = Vowel, 
+             y = correct_recog, 
+             fill = Vowel,
+             colour = Vowel,
+             group = generative_model,
+             #colour = generative_model, 
+             alpha = generative_model)) + 
+  stat_summary(fun.y = "mean", geom = "bar", 
+               position = position_dodge(.9)) +
+  stat_summary(fun.data = "mean_cl_boot", geom = "pointrange", 
+               position = position_dodge(.9),
+               alpha = 1, colour = "grey30") +
+  stat_summary(fun.y = "mean", geom = "point", 
+               position = position_dodge(.9),
+               aes(colour = Vowel),
+               alpha = 1,
+               show.legend = FALSE) +
+  scale_y_continuous("Probability of correct recognition") +
+  scale_alpha_manual(values = c(.2, .4, .6, .8, .95)) +
+  guides(fill = FALSE, colour = FALSE) +
+  coord_cartesian(ylim = c(.38, 1)) +
+  geom_rangeframe(colour = "black", alpha = 1) +
+  theme_1
+
+
+p_Ln <- class_Ln %>%
+  mutate(correct_recog = as.numeric(correct)) %>%
+  left_join(model_names) %>%
+  ggplot(aes(x = Vowel, 
+             y = correct_recog, 
+             fill = Vowel,
+             colour = Vowel,
+             group = generative_model,
+             alpha = generative_model)) + 
+  stat_summary(fun.y = "mean", geom = "bar", 
+               position = position_dodge(.9)) +
+  stat_summary(fun.data = "mean_cl_boot", geom = "pointrange", 
+               position = position_dodge(.9),
+               alpha = 1, colour = "grey30") +
+  stat_summary(fun.y = "mean", geom = "point", 
+               position = position_dodge(.9),
+               aes(colour = Vowel),
+               alpha = 1,
+               show.legend = FALSE) +
+  scale_y_continuous("Probability of correct recognition") +
+  scale_alpha_manual(values = c(.2, .4, .6, .8, .95)) +
+  guides(fill = FALSE, colour = FALSE) +
+  coord_cartesian(ylim = c(.38, 1)) +
+  geom_rangeframe(colour = "black", alpha = 1) +
+  theme_1
+
+```
 
 Listeners need to cope with variability across talkers for successful
 speech perception. At one level, this can be framed as a problem of
@@ -51,6 +333,47 @@ map of these regions]. We have three primary questions:
 
 Results
 =======
+
+```{r kl-plots, fig.height = 8}
+
+grobs <- ggplotGrob(p_kl + theme(legend.position="bottom"))$grobs
+legend_b <- grobs[[which(sapply(grobs, function(x) x$name) == "guide-box")]]
+
+plot_grid(legend_b, 
+          p_kl + 
+            theme(legend.position = "none"), 
+          p_kl_ln + 
+            theme(legend.position = "none"), 
+          labels = c("", 
+                     "A (input = F1xF2 (Hz))", 
+                     "B (input = Lobanov-normalized F1xF2)"),
+          label_size = 13,
+          hjust = 0,
+          vjust = 0,
+          nrow = 3, 
+          rel_heights = c(.2, 1, 1))
+
+```
+
+```{r class-plots, fig.height = 8}
+grobs <- ggplotGrob(p_hz + theme(legend.position="bottom"))$grobs
+legend_b <- grobs[[which(sapply(grobs, function(x) x$name) == "guide-box")]]
+
+plot_grid(legend_b, 
+          p_hz + theme(legend.position = "none"), 
+          p_Ln + theme(legend.position = "none"), 
+          labels = c("", 
+                     "A (input = F1xF2 (Hz))", 
+                     "B (input = Lobanov-normalized F1xF2)"),
+          label_size = 13,
+          hjust = 0,
+          vjust = 0.5,
+          nrow = 3, 
+          rel_heights = c(.2, 1, 1))
+
+```
+
+
 
 1.  Individual talker's cue distributions are more specific than the
     overall distributions for their gender+dialect group (higher KL
