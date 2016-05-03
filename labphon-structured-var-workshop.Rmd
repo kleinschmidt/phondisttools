@@ -6,7 +6,7 @@ Listeners need to cope with variability across talkers for successful speech per
 
 Not only can listeners benefit from picking up on the strucutre in talker variability, but at a basic level the __kind__ of variability across talkers determines what kind of strategy is best suited to coping with it.  For instance, when every talker varies in idiosyncratic ways, the best you can do is to adapt to each talker individually, not drawing on specific experience with any other particular talker or group.  However, when talkers vary in __structured__ ways, the best thing to do is to draw on experience with other _similar_ talkers when adapting to an unfamiliar talker.
 
-At this point very little quantitative information is available on what kind of structure is present in variability across talkers [notably except @Chodroff2015]. We explore what kind of structure there is in the variability across talkers in F1 and F2 for English vowels, based on isolated productions of hVd words collected in the Nationwide Speech Project [@Clopper2005]. This corpus contains productions from 8 talkers (4 male and 4 female) each from 6 major dialect regions of the United States: 
+At this point very little quantitative information is available on what kind of structure is present in variability across talkers [notably except @Chodroff2015]. We explore what kind of structure there is in the variability across talkers and regional dialects in English vowels. We base our analysis on F1 and F2 measured from isolated productions of hVd words in the Nationwide Speech Project corpus [@Clopper2005]. This corpus contains productions from 8 talkers (4 male and 4 female) each from 6 major dialect regions of the United States: 
 New England, Mid-Atlantic, North, Midland, South, and West [see @Clopper2005 for a map of these regions].
 
 Our goal is to begin to quantify how much structure there is in variation across talkers at different, partially overlapping levels of grouping. We consider three ways of grouping talkers: at the individual talker level, at the gender level, and at the dialect level. We ask what the consequences would be of ignoring each of these potential ways of grouping talkers, using two measures.
@@ -27,6 +27,10 @@ Questions:
 
 # Conclusion
 
-Dialect is informative, above and beyond gender, about cue distributions of individual talkers. But listeners would still benefit from adapting to talker-specific cue distributions.
+Dialect is informative, above and beyond gender, about cue distributions of individual talkers. But listeners would still benefit from knowing talker-specific cue distributions.
 
 An important caveat: we've evaluated this using isolated productions of minimal set words. On the one hand, it's possible that during normal comprehension, the presence of information from the lexicon and other, neighboring segments would mitigate the effects of not knowing a particular talker's distributions. On the other hand, it's also possible that during running speech distribution of all categories become more overlapping and harder to tease apart, which might _increase_ the benefit of knowing the current talker's distributions as well as possible.
+
+Another caveat: lumping all tokens together is not the same as having uncertainty about the underlying talker-specific distributions. This might (in principle) change our conclusions but we leave it for future work.
+
+In the future, we want to know how knowledge of this structure across talkers would affect _adaptation_. Knowing the range of variation across talkers provides an informative prior starting point for adaptation, but it's not obvious how much of a benefit this actually provides for English vowels.
