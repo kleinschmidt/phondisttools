@@ -2,7 +2,7 @@ Labphon workshop abstract
 =========================
 
 Listeners need to cope with variability across talkers for successful
-speech perception. At one leve, this can be framed as a problem of
+speech perception. At one level, this can be framed as a problem of
 statistical inference: in order to infer a talker's intended category
 from observed cues, the listener needs to know the distribution of cues
 for each category. But these distributions vary across talkers.
@@ -21,36 +21,29 @@ However, if talkers vary based on groups like gender or regional dialect, listen
 drawing on experience with other talkers from the same group when adapting to
 an unfamiliar talker.
 
-At this point very little quantitative information is available on what
-kind of group structure is present in variability across talkers [notably
-except @Chodroff2015]. We explore what kind of structure there is in the
-variability across talkers and regional dialects in English vowels. We
-base our analysis on F1 and F2 measured from isolated productions of hVd
-words in the Nationwide Speech Project corpus [@Clopper2005]. This
-corpus contains productions from 8 talkers (4 male and 4 female) each
-from 6 major dialect regions of the United States: New England,
+We know that sociolinguistic grouping factors such as gender and dialect are
+informative about phonetic variation: e.g., by definition, talkers who share a dialect produce similar patterns of 
+variation. At this point, however, very little quantitative information is available
+on the __relative__ informativitity of different grouping factors [notably
+except @Chodroff2015]. Our goal is to begin to  quantify how much structure there 
+is in variation across talkers at different, partially overlapping levels of grouping. 
+We consider four ways of grouping observed category tokens: by individual talker,
+by gender, by dialect, and by both gender and dialect. We assess the informativity of 
+attending to versus ignoring these different grouping levels during speech perception. 
+Specifically, we assess informativity at two levels: 
+
+1. At the level of cue distributions: the difference between the marginal (or average) distribution across talkers and the corresponding distribution conditioned on each grouping level. 
+2. At the level of category recognition: the probability of correct recognition of individual tokens based on classifiers trained on different grouping levels.
+
+We base our analysis on the first and second formant values (F1 and F2) 
+measured from isolated productions of hVd words in the Nationwide Speech 
+Project corpus [@Clopper2005]. This corpus contains productions from 8 talkers 
+(4 male and 4 female) each from 6 major dialect regions of the United States: New England,
 Mid-Atlantic, North, Midland, South, and West [see @Clopper2005 for a
-map of these regions].
-
-Our goal is to begin to quantify how much structure there is in
-variation across talkers at different, partially overlapping levels of
-grouping. We consider three ways of grouping talkers: at the individual
-talker level, at the gender level, and at the dialect level. We ask what
-the consequences would be of ignoring each of these potential ways of
-grouping talkers, using two measures.
-
-1.  How much distributions of cues (F1 and F2) diverge when different
-    grouping levels are considered. KL divergence: the "cost" (in bits)
-    of encoding the cue distribution of a particular grouping level
-    using the overall or marginal cue distribution.
-2.  The comprehension cost: probability of correct recognition of
-    individual tokens based on classifiers trained on different grouping
-    levels.
-
-Questions:
+map of these regions]. We have three primary questions:
 
 1.  Does knowing a particular talker's own distributions provide any
-    benefit on top of knowing group-level distributions?
+    benefit on top of knowing higher-level group distributions?
 2.  Does knowing dialect provide any benefit on top of knowing gender,
     or nothing at all?
 3.  How does normalization (Lobanov) affect the utility of knowing
