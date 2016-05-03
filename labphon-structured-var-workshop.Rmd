@@ -6,7 +6,13 @@ author:
 - T. Florian Jaeger
 #bibliography: /Users/dkleinschmidt/Documents/papers/library-clean.bib
 csl: apa.csl
-output: pdf_document
+output:
+  pdf_document:
+    keep_tex: true
+    fig_caption: true
+    #pandoc_args:
+    #- --filter
+    #- pandoc-fignos
 geometry: margin=1in
 graphics: yes
 ---
@@ -24,14 +30,27 @@ library(scales)
 
 library(phonR) # contains functions for vowel normalization
 
+
+## Produce markdown-formatted figures so that pandoc knows what to do with
+## the captions. requires pandoc-fignos to parse the IDs. refer to figures
+## in text with {@fig:label} or just @fig:label
+## 
+## (see https://github.com/tomduck/pandoc-fignos)
+knit_hooks$set(plot = function(x, options) {
+  paste0('![', options$fig.cap, ']',
+         '(', opts_knit$get('base.url'), paste(x, collapse='.'), ')',
+         '{#fig:', options$label, '}')
+})
+
 knitr::opts_chunk$set(cache = TRUE,
                       warning = FALSE, 
                       message = FALSE,
-                      dev = c('png', 'pdf'),
+                      dev = c('pdf'),
                       fig.width = 9,
                       fig.height = 3,
                       results = 'hide',
                       echo = FALSE)
+
 
 theme_1 <- theme_bw() +
   theme(panel.border = element_blank(),
@@ -58,8 +77,6 @@ nsp_vows <- nsp_vows %>%
 ```
 
 ```{r train-models}
-
-
 
 speaker_model <- nsp_vows %>% group_by(Talker) %>% train_models()
 gender_model <- nsp_vows %>% group_by(Sex) %>% train_models()
@@ -321,21 +338,16 @@ We base our analysis on the first and second formant values (F1 and F2)
 measured from isolated productions of hVd words in the Nationwide Speech 
 Project corpus [@Clopper2005]. This corpus contains productions from 8 talkers 
 (4 male and 4 female) each from 6 major dialect regions of the United States: New England,
-Mid-Atlantic, North, Midland, South, and West [see @Clopper2005 for a
-map of these regions]. We have three primary questions:
-
-1.  Does knowing a particular talker's own distributions provide any
-    benefit on top of knowing higher-level group distributions?
-2.  Does knowing dialect provide any benefit on top of knowing gender,
-    or nothing at all?
-3.  How does normalization (Lobanov) affect the utility of knowing
-    gender?
+Mid-Atlantic, North, Midland, South, and West [see @Clopper2005 for a map of these regions]. Our goal is to assess whether considering dialect-level
+groupings of talkers is informative, and specifically whether it is informative
+at an _intermediate_ level (between marginal- or language-wide and
+fully talker-specific distributions).
 
 Informativity at the level of cue distributions
 =================================================
 We used the Kullback-Leibler (KL) divergence to assess the relative informativity of grouping factors with respect to cue distributions. KL divergence is an information-theoretic measure of the information lost when using one distribution (e.g., the marginal or average ditribution of acoustic cue values) to estimate another distribution (e.g., the corresponding talker- or group-specific distribution). Figure XXX shows the KL divergence (information loss in bits) when using the marginal F~1~xF~2~ distribution across all talkers in the NSP corpus to estimate the corresponding distribution conditioned on (i) dialect, (ii) gender, (iii) both dialect and gender, and (iv) talker identity. The information loss is significantly larger than zero in all cases (as indicated by the bootstrapped confidence intervals); this indicates that each of the grouping factors carries information about the distribution of F~1~xF~2~ values in the input. However, the _amount_ of information loss varies considerably across grouping factors. Talker identity carries the most information, as indicated by the relatively large KL divergence 
 
-```{r kl-plots, fig.height = 8}
+```{r kl-plots, fig.height = 3.6, fig.cap="KL divergence between marginal formant distributions and each grouping level's distribution."}
 
 grobs <- ggplotGrob(p_kl + theme(legend.position="bottom"))$grobs
 legend_b <- grobs[[which(sapply(grobs, function(x) x$name) == "guide-box")]]
@@ -343,77 +355,49 @@ legend_b <- grobs[[which(sapply(grobs, function(x) x$name) == "guide-box")]]
 plot_grid(legend_b, 
           p_kl + 
             theme(legend.position = "none"), 
-          p_kl_ln + 
-            theme(legend.position = "none"), 
-          labels = c("", 
-                     "A (input = F1xF2 (Hz))", 
-                     "B (input = Lobanov-normalized F1xF2)"),
+          ## labels = c("", 
+          ##            "A (input = F1xF2 (Hz))", 
+          ##            "B (input = Lobanov-normalized F1xF2)"),
           label_size = 13,
           hjust = 0,
           vjust = 0,
-          nrow = 3, 
-          rel_heights = c(.2, 1, 1))
+          nrow = 2, 
+          rel_heights = c(.2, .8))
 
 ```
 
-
-# Informativity at the level of category recognition
+Informativity at the level of category recognition
 =================================================
-```{r class-plots, fig.height = 8}
+
+```{r class-plots, fig.height = 3.6, fig.cap="Comprehension accuracy using different levels of grouping"}
 grobs <- ggplotGrob(p_hz + theme(legend.position="bottom"))$grobs
 legend_b <- grobs[[which(sapply(grobs, function(x) x$name) == "guide-box")]]
 
 plot_grid(legend_b, 
           p_hz + theme(legend.position = "none"), 
-          p_Ln + theme(legend.position = "none"), 
-          labels = c("", 
-                     "A (input = F1xF2 (Hz))", 
-                     "B (input = Lobanov-normalized F1xF2)"),
+          ## labels = c("", 
+          ##            "A (input = F1xF2 (Hz))", 
+          ##            "B (input = Lobanov-normalized F1xF2)"),
           label_size = 13,
           hjust = 0,
           vjust = 0.5,
-          nrow = 3, 
-          rel_heights = c(.2, 1, 1))
+          nrow = 2, 
+          rel_heights = c(.2, .8))
 
 ```
 
+We find that grouping talkers by dialect region is informative at an
+intermediate level. Dialect distributions diverge from the marginal
+cue distributions, but not as much as the talker-specific distributions do
+(KL divergence, Figure {@fig:kl-plots}). Moreover, considering both dialect
+_and_ gender provides an additional boost over gender alone.
+Similarly, comprehension is better (higher probability of correct recognition;
+Figure {@fig:class-plots}) when additionally conditioning on dialect (relative
+to marginal, and gender-only).
 
-
-1.  Individual talker's cue distributions are more specific than the
-    overall distributions for their gender+dialect group (higher KL
-    divergence from marginal), and knowing talker-specific distributions
-    provides a substantial increase over knowing only gender+dialect
-    distributions in probability of correct recognition. This is
-    especially true for crowded (mid and low) regions of the vowel
-    space.
-2.  Nevertheless, knowing dialect also provides a substantial boost in
-    comprehension performance., although this is more variable across
-    vowels.
-
-Conclusion
-==========
-
-Dialect is informative, above and beyond gender, about cue distributions
-of individual talkers. But listeners would still benefit from knowing
-talker-specific cue distributions.
-
-An important caveat: we've evaluated this using isolated productions of
-minimal set words. On the one hand, it's possible that during normal
-comprehension, the presence of information from the lexicon and other,
-neighboring segments would mitigate the effects of not knowing a
-particular talker's distributions. On the other hand, it's also possible
-that during running speech distribution of all categories become more
-overlapping and harder to tease apart, which might *increase* the
-benefit of knowing the current talker's distributions as well as
-possible.
-
-Another caveat: lumping all tokens together is not the same as having
-uncertainty about the underlying talker-specific distributions. This
-might (in principle) change our conclusions but we leave it for future
-work.
-
-In the future, we want to know how knowledge of this structure across
-talkers would affect *adaptation*. Knowing the range of variation across
-talkers provides an informative prior starting point for adaptation, but
-it's not obvious how much of a benefit this actually provides for
-English vowels.
+This shows that dialect is informative, above and beyond gender, about cue distributions
+of individual talkers. Listeners would still benefit from knowing
+talker-specific cue distributions. Future work will consider the effect of
+_uncertainty_ about talker-specific distributions at a group level, and the
+effect of incorporating this hierarchical structure into models of adaptation
+[like @Kleinschmidt2015].
