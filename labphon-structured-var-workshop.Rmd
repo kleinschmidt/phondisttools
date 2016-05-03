@@ -1,12 +1,18 @@
 ---
 title: How informative is dialect about vowel distributions?
 author:
-- Kodi Weatherholtz 
 - Dave F. Kleinschmidt
+- Kodi Weatherholtz 
 - T. Florian Jaeger
 bibliography: /Users/dkleinschmidt/Documents/papers/library-clean.bib
 csl: apa.csl
-output: pdf_document
+output:
+  pdf_document:
+    keep_tex: true
+    fig_caption: true
+    pandoc_args:
+    - --filter
+    - pandoc-fignos
 geometry: margin=1in
 graphics: yes
 ---
@@ -24,14 +30,27 @@ library(scales)
 
 library(phonR) # contains functions for vowel normalization
 
+
+## Produce markdown-formatted figures so that pandoc knows what to do with
+## the captions. requires pandoc-fignos to parse the IDs. refer to figures
+## in text with {@fig:label} or just @fig:label
+## 
+## (see https://github.com/tomduck/pandoc-fignos)
+knit_hooks$set(plot = function(x, options) {
+  paste0('![', options$fig.cap, ']',
+         '(', opts_knit$get('base.url'), paste(x, collapse='.'), ')',
+         '{#fig:', options$label, '}')
+})
+
 knitr::opts_chunk$set(cache = TRUE,
                       warning = FALSE, 
                       message = FALSE,
-                      dev = c('png', 'pdf'),
+                      dev = c('pdf'),
                       fig.width = 9,
                       fig.height = 3,
                       results = 'hide',
                       echo = FALSE)
+
 
 theme_1 <- theme_bw() +
   theme(panel.border = element_blank(),
@@ -334,7 +353,7 @@ map of these regions]. We have three primary questions:
 Results
 =======
 
-```{r kl-plots, fig.height = 4.4}
+```{r kl-plots, fig.height = 3.6, fig.cap="KL divergence between marginal formant distributions and each grouping level's distribution."}
 
 grobs <- ggplotGrob(p_kl + theme(legend.position="bottom"))$grobs
 legend_b <- grobs[[which(sapply(grobs, function(x) x$name) == "guide-box")]]
@@ -349,11 +368,11 @@ plot_grid(legend_b,
           hjust = 0,
           vjust = 0,
           nrow = 2, 
-          rel_heights = c(.2, 1))
+          rel_heights = c(.2, .8))
 
 ```
 
-```{r class-plots, fig.height = 4.4}
+```{r class-plots, fig.height = 3.6, fig.cap="Comprehension accuracy using different levels of grouping"}
 grobs <- ggplotGrob(p_hz + theme(legend.position="bottom"))$grobs
 legend_b <- grobs[[which(sapply(grobs, function(x) x$name) == "guide-box")]]
 
@@ -366,7 +385,7 @@ plot_grid(legend_b,
           hjust = 0,
           vjust = 0.5,
           nrow = 2, 
-          rel_heights = c(.2, 1))
+          rel_heights = c(.2, .8))
 
 ```
 
