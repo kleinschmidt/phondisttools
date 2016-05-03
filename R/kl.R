@@ -51,7 +51,7 @@ KL.bvnorm <- function(
   # SHOULD THE LOG BE BASE 2 ???
   kl <- .5 * (log2(det(Sigma2) / det(Sigma1)) - 
           dim(Sigma1)[1] + 
-          tr(solve(Sigma2)%*%Sigma1) +
+          psych::tr(solve(Sigma2)%*%Sigma1) +
           t(mu2-mu1) %*% solve(Sigma2) %*% (mu2-mu1)
         )
         
