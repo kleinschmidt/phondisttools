@@ -334,7 +334,7 @@ map of these regions]. We have three primary questions:
 Results
 =======
 
-```{r kl-plots, fig.height = 8}
+```{r kl-plots, fig.height = 4.4}
 
 grobs <- ggplotGrob(p_kl + theme(legend.position="bottom"))$grobs
 legend_b <- grobs[[which(sapply(grobs, function(x) x$name) == "guide-box")]]
@@ -342,34 +342,31 @@ legend_b <- grobs[[which(sapply(grobs, function(x) x$name) == "guide-box")]]
 plot_grid(legend_b, 
           p_kl + 
             theme(legend.position = "none"), 
-          p_kl_ln + 
-            theme(legend.position = "none"), 
-          labels = c("", 
-                     "A (input = F1xF2 (Hz))", 
-                     "B (input = Lobanov-normalized F1xF2)"),
+          ## labels = c("", 
+          ##            "A (input = F1xF2 (Hz))", 
+          ##            "B (input = Lobanov-normalized F1xF2)"),
           label_size = 13,
           hjust = 0,
           vjust = 0,
-          nrow = 3, 
-          rel_heights = c(.2, 1, 1))
+          nrow = 2, 
+          rel_heights = c(.2, 1))
 
 ```
 
-```{r class-plots, fig.height = 8}
+```{r class-plots, fig.height = 4.4}
 grobs <- ggplotGrob(p_hz + theme(legend.position="bottom"))$grobs
 legend_b <- grobs[[which(sapply(grobs, function(x) x$name) == "guide-box")]]
 
 plot_grid(legend_b, 
           p_hz + theme(legend.position = "none"), 
-          p_Ln + theme(legend.position = "none"), 
-          labels = c("", 
-                     "A (input = F1xF2 (Hz))", 
-                     "B (input = Lobanov-normalized F1xF2)"),
+          ## labels = c("", 
+          ##            "A (input = F1xF2 (Hz))", 
+          ##            "B (input = Lobanov-normalized F1xF2)"),
           label_size = 13,
           hjust = 0,
           vjust = 0.5,
-          nrow = 3, 
-          rel_heights = c(.2, 1, 1))
+          nrow = 2, 
+          rel_heights = c(.2, 1))
 
 ```
 
