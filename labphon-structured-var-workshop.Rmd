@@ -406,21 +406,3 @@ We have shown that talker variability in vowels is _structured_, and that dialec
 With this model in mind, we are equipped to predict which factors listeners should be sensitive to
 when adapting, making (for the first time) quantitative predictions about the
 relative importance of different socio-indexical groupings. For instance, gender, dialect, and other factors might influence consonant contrasts like /b/ vs. /p/ in substantially different ways than vowels.
-
-
-
-
-Moreover, an ideal observer approach, suggests that tracking dialect-level distributions has substantial utility for listeners, by reducing the chance of comprehension errors.  
-
-
-
-Nevertheless, talker-specific distributions are more informative and have more utility
-than dialect alone.
-
-has substantial utility for listeners.
-
-of individual talkers. Listeners would still benefit from knowing
-talker-specific cue distributions. Future work will consider the effect of
-_uncertainty_ about talker-specific distributions at a group level, and the
-effect of incorporating this hierarchical structure into models of adaptation
-[like @Kleinschmidt2015].
