@@ -374,7 +374,7 @@ As with the informativity, the utility is highest for the talker-specific
 distributions. The importance of dialect varies across vowels: for some its utility
 is nearly as high as gender, while for others it contributes little if anything.
 
-```{r class-plots, fig.height = 3.3, fig.cap="Comprehension accuracy using different levels of grouping"}
+```{r class-plots, fig.height = 3.3, fig.cap="Comprehension accuracy for each vowel using different levels of grouping"}
 grobs <- ggplotGrob(p_hz + theme(legend.position="bottom"))$grobs
 legend_b <- grobs[[which(sapply(grobs, function(x) x$name) == "guide-box")]]
 
