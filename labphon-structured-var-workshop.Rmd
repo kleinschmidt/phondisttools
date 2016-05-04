@@ -14,6 +14,8 @@ output:
     pandoc_args:
     - --filter
     - pandoc-fignos
+header-includes:
+  - \usepackage{tipa}
 geometry: margin=1in
 graphics: yes
 ---
@@ -43,7 +45,7 @@ knit_hooks$set(plot = function(x, options) {
          '{#fig:', options$label, '}')
 })
 
-knitr::opts_chunk$set(cache = TRUE,
+knitr::opts_chunk$set(cache = FALSE,
                       warning = FALSE, 
                       message = FALSE,
                       dev = c('pdf'),
@@ -266,7 +268,7 @@ p_hz <- class_hz %>%
                alpha = 1,
                show.legend = FALSE) +
   scale_y_continuous("Probability of correct recognition") +
-  scale_alpha_manual(values = c(.2, .4, .6, .8, .95)) +
+  scale_alpha_manual("Generative model", values = c(.2, .4, .6, .8, .95)) +
   guides(fill = FALSE, colour = FALSE) +
   coord_cartesian(ylim = c(.38, 1)) +
   geom_rangeframe(colour = "black", alpha = 1) +
@@ -293,7 +295,7 @@ p_Ln <- class_Ln %>%
                alpha = 1,
                show.legend = FALSE) +
   scale_y_continuous("Probability of correct recognition") +
-  scale_alpha_manual(values = c(.2, .4, .6, .8, .95)) +
+  scale_alpha_manual("Generative model", values = c(.2, .4, .6, .8, .95)) +
   guides(fill = FALSE, colour = FALSE) +
   coord_cartesian(ylim = c(.38, 1)) +
   geom_rangeframe(colour = "black", alpha = 1) +
@@ -314,41 +316,40 @@ distributions combining the statistics of the current speech with prior
 experience with other talkers.  Critically, this framework says that
 listeners should use any available information that's informative about
 an unfamiliar talker's cue distributions.  The __structure__ of the
-variability across talkers will determine what factors are informative.
+variability across talkers will determine which factors are informative.
 For instance, if talkers primarily vary based on groups like gender or regional dialect, listeners can
 draw on experience with other talkers from the same group when adapting.
 However, if talkers vary in purely idiosyncratic ways,
 listener should adapt to each talker individually, not drawing
 on specific experience with any other particular talker or group.
 
-Sociolinguistic research suggests that grouping factors such as gender and dialect that are indeed
+Sociolinguistic research suggests that grouping factors such as gender and dialect are indeed
 informative about phonetic variation. What is lacking, however, is a quantitative framework that
 allows us to compare the _relative_ informativity of different grouping factors for any
-given phonetic variability. Here we begin to develop and evaluate such a framework, based on the ideal adapter. Specifically, we consider four ways of grouping observed category tokens: by individual talker,
+given pattern of phonetic variation. Here we begin to develop and evaluate such a framework, based on the ideal adapter. Specifically, we consider four ways of grouping observed category tokens: by individual talker,
 by gender, by dialect, and by both gender and dialect. We assess the consequences of
-attending to versus ignoring these different grouping levels during speech perception. We calculate these consequences at two levels:
+attending to versus ignoring these different socio-indexical grouping factors during speech perception. We calculate these consequences at two levels:
 
-1. __Informativity__ at the level of cue distributions: the difference between the marginal (or average) distribution across talkers and the corresponding distribution conditioned on each grouping level. 
-2. __Utility__ at the level of category recognition: the probability of correct recognition of individual tokens based on classifiers trained on different grouping levels.
+1. __Informativity__ at the level of cue distributions: the difference between the marginal (or average) distribution across talkers and the corresponding distribution conditioned on each grouping factor. 
+2. __Utility__ at the level of category recognition: the probability of correct recognition of individual tokens by classifiers with knowledge of different distributional statistics (e.g., dialect- or gender-specific statistics).
 
 #### Data
 
-We base our analysis on the first and second formant values (F1 and F2) 
+We base our analysis on the first and second formant values (F~1~ and F~2~) 
 measured from isolated productions of hVd words in the Nationwide Speech 
-Project corpus [@Clopper2005]. This corpus contains productions from 8 talkers 
-(4 male and 4 female) each from 6 major dialect regions of the United States: New England,
-Mid-Atlantic, North, Midland, South, and West. Our goal is to assess whether considering dialect-level
-groupings of talkers is informative, and specifically whether it is informative
-at an _intermediate_ level (between marginal- or language-wide and
-fully talker-specific distributions).
+Project corpus [@Clopper2005]. This corpus contains productions from 48 talkers: 8 talkers 
+(4 male and 4 female) from each of 6 major dialect regions of the United States (New England,
+Mid-Atlantic, North, Midland, South, and West). We assess whether considering dialect-level
+groupings of talkers is informative, and specifically whether dialect-specific distributions are informative
+at an _intermediate_ level between language-wide (marginal) and talker-specific distributions.
 
 #### Informativity at the level of cue distributions
 
-We used the Kullback-Leibler (KL) divergence to assess the relative informativity of grouping factors with respect to cue distributions. KL divergence is an information-theoretic measure of the information lost when using one distribution (e.g., the marginal or average ditribution of acoustic cue values) to estimate another distribution (e.g., the corresponding talker- or group-specific distribution). Figure {@fig:kl-plots} shows the KL divergence (information loss in bits) when using the marginal F~1~xF~2~ distribution across all talkers in the NSP corpus rather than distributions conditioned on (i) dialect, (ii) gender, (iii) both dialect and gender, and (iv) talker identity.
+We used the Kullback-Leibler (KL) divergence to assess the relative informativity of grouping factors with respect to cue distributions. KL divergence is an information-theoretic measure of the information lost when using one distribution (e.g., the marginal or average ditribution of acoustic cue values) to estimate another distribution (e.g., the corresponding talker- or group-specific distribution). Figure {@fig:kl-plots} shows the KL divergence (information loss in bits) when using the marginal F~1~xF~2~ distribution across all talkers in the NSP corpus rather than distributions conditioned on (i) dialect, (ii) gender, (iii) both dialect and gender, and (iv) talker.
 
 The information loss is significantly larger than zero in all cases (as indicated by the bootstrapped confidence intervals). This indicates that each of the grouping factors carries information about the distribution of F~1~xF~2~ values. However, the relative _amount_ of information loss varies considerably across grouping factors. Talker identity carries the most information, as indicated by the relatively large KL divergence, but dialect also carries information, even above and beyond gender.
 
-These results are in line with sociolinguistic research: dialect and gender affect the realization of vowels. Going beyond this research, we can now quantify the relative influence of these factors, as well as talker identity.
+These results are in line with sociolinguistic research: dialect and gender affect the realization of vowels. Going beyond this research, we can now quantify the relative influence of these socio-indexical factors with respect to perception and category recognition.
 
 ```{r kl-plots, fig.height = 3.6, fig.cap="KL divergence between marginal formant distributions and each grouping level's distribution."}
 
@@ -374,16 +375,15 @@ plot_grid(legend_b,
 <!-- what's utility vs informativity?? -->
 
 Different cue distributions lead to different optimal phonetic categorization
-strategies. But it's possible that this variation does not actually lead to
-_errors_ often enough to matter. The _utility_ of a socio-indexical grouping level
-depends on how much knowing that grouping reduces comprehension errors.
-Figure {@fig:class-plots} shows the probability of correct recognition
-under the distributions for each of the grouping levels, as a measure of utility.
+strategies. It is possible, however, that this variation does not cause categorization
+_errors_ often enough to matter in perception. The _utility_ of any socio-indexical grouping factor thus
+depends on the extent to which categorization errors are reduced by drawing on knowledge of how variation is structured with respect to that group. As a measure of utility, we assessed the probability of correctly recognizing each vowel token under the marginal F~1~xF~2~ distributional statistics or the corresponding statistics conditioned on the socio-indexical factors of interest. Figure {@fig:class-plots} shows the results.
+<!-- Figure {@fig:class-plots} shows the probability of correct category recognition under the distributions for each of the grouping levels, as a measure of utility. -->
 As with the informativity, the utility is highest for the talker-specific
 distributions. The importance of dialect varies across vowels: for some its utility
 is nearly as high as gender, while for others it contributes little if anything.
 
-```{r class-plots, fig.height = 3.6, fig.cap="Comprehension accuracy using different levels of grouping"}
+```{r class-plots, fig.height = 3.3, fig.cap="Comprehension accuracy using different levels of grouping"}
 grobs <- ggplotGrob(p_hz + theme(legend.position="bottom"))$grobs
 legend_b <- grobs[[which(sapply(grobs, function(x) x$name) == "guide-box")]]
 
@@ -400,9 +400,14 @@ plot_grid(legend_b,
 
 ```
 
-
+#### Conclusions
 <!-- spell out this reasoning a bit more-->
-We have shown that talker variability in vowels is _structured_, and that dialect is informative about variation in vowel distributions. Moreover, using an ideal observer model, we have showed that knowledge of this structured variabiltiy substantially improves comprehension in the face of talker variability.
+
+<!-- We have shown that talker variability in vowels is _structured_, and that dialect is informative about variation in vowel distributions. -->
+
+We have assessed _how_ variability in vowels is structured. Specifically, we assessed the relative amount of information that different socio-indexical grouping factors carry with respect to vowel variation. Moreover, using an ideal observer model, we have shown that knowledge of how vowel variation is structured substantially improves comprehension in the face of talker variability.
 With this model in mind, we are equipped to predict which factors listeners should be sensitive to
 when adapting, making (for the first time) quantitative predictions about the
-relative importance of different socio-indexical groupings. For instance, gender, dialect, and other factors might influence consonant contrasts like /b/ vs. /p/ in substantially different ways than vowels.
+relative importance of different socio-indexical factors for perception.
+
+<!---For instance, gender, dialect, and other factors might influence consonant contrasts like /s/ vs. /\textesh/ in substantially different ways than vowels.-->
