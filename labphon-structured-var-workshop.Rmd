@@ -4,11 +4,9 @@ author:
 - Dave F. Kleinschmidt
 - Kodi Weatherholtz 
 - T. Florian Jaeger
-bibliography: /Users/dkleinschmidt/Documents/papers/library-clean.bib
-csl: apa.csl
 output:
   pdf_document:
-    template: template_default.tex
+    template: template.tex
     keep_tex: true
     fig_caption: true
     pandoc_args:
@@ -310,7 +308,7 @@ from observed cues, the listener needs to know the distribution of cues
 for each category. But these distributions vary across talkers.
 
 <!-- it's AN approach -->
-The ideal adapter framework [@Kleinschmidt2015] says that the best way to
+The ideal adapter framework (Kleinschmidt & Jaeger, 2015, _Psych.Rev._) says that the best way to
 deal with this variability is to _infer_ the current talker's cue
 distributions combining the statistics of the current speech with prior
 experience with other talkers.  Critically, this framework says that
@@ -337,7 +335,7 @@ attending to versus ignoring these different socio-indexical grouping factors du
 
 We base our analysis on the first and second formant values (F~1~ and F~2~) 
 measured from isolated productions of hVd words in the Nationwide Speech 
-Project corpus [@Clopper2005]. This corpus contains productions from 48 talkers: 8 talkers 
+Project corpus (Clopper, Pisoni, & de Jong, 2005, _JASA_). This corpus contains productions from 48 talkers: 8 talkers 
 (4 male and 4 female) from each of 6 major dialect regions of the United States (New England,
 Mid-Atlantic, North, Midland, South, and West). We assess whether considering dialect-level
 groupings of talkers is informative, and specifically whether dialect-specific distributions are informative
