@@ -306,16 +306,14 @@ speech perception. This can be framed as a problem of
 statistical inference: in order to infer a talker's intended category
 from observed cues, the listener needs to know the distribution of cues
 for each category. But these distributions vary across talkers.
-
 <!-- it's AN approach -->
-The ideal adapter framework (Kleinschmidt & Jaeger, 2015, _Psych.Rev._) says that the best way to
-deal with this variability is to _infer_ the current talker's cue
-distributions combining the statistics of the current speech with prior
-experience with other talkers.  Critically, this framework says that
+When viewed this way (as in the ideal adapter framework, Kleinschmidt & Jaeger, 2015, _Psych.Rev._) talker variability requires inference at another level: listeners must _infer_ the current talker's cue
+distributions, by combining the statistics of the current speech with prior
+experience with other talkers.  Critically, this implies that
 listeners should use any available information that's informative about
-an unfamiliar talker's cue distributions.  The __structure__ of the
+an unfamiliar talker's cue distributions.  The _structure_ of the
 variability across talkers will determine which factors are informative.
-For instance, if talkers primarily vary based on groups like gender or regional dialect, listeners can
+For instance, if talkers primarily vary based on socio-indexical groups like gender or regional dialect, listeners can
 draw on experience with other talkers from the same group when adapting.
 However, if talkers vary in purely idiosyncratic ways,
 listener should adapt to each talker individually, not drawing
