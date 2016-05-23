@@ -76,8 +76,8 @@ list_models <- function(d, names_col, model_field='model')
 #' in `model_class`, and correctness in `correct`.
 #'
 #' @export
-classify_mods <- function(data, models,
-                          formants=names(models$model[[1]]$mu)) {
+classify_vowels <- function(data, models,
+                            formants=names(models$model[[1]]$mu)) {
 
   model_groups <- groups(models)
   data <- data %>% group_by_(.dots = model_groups)
