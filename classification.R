@@ -1,8 +1,58 @@
-library(purrr)
-library(dplyr)
-library(tidyr)
+#' @import purrr
+#' @import dplyr
+#' @import tidyr
+NULL
 
-model_lhood <- function(mod, dat) mvtnorm::dmvnorm(dat, mod$mu, mod$Sigma)
+#' Numerically stable sum of logged nubmers
+#'
+#' @param x a numeric vector of logged values.
+#' @return log of the sum of the exponentiated entries in x.
+log_sum_exp <- function(x) {
+  max_x <- max(x)
+  log(sum(exp(x - max_x))) + max_x
+}
+#' Numerically stable mean of logged numbers
+#'
+#' Use for, e.g., calculating marginal log-likelihood
+#'
+#' @param x a numeric vector of logged values
+#' @return the log of the mean of the exponentiated entries in x.
+log_mean_exp <- function(x) log_sum_exp(x) - log(length(x))
+
+
+#' Likelihood of data under one vowel's model
+#'
+#' @param mod multivariate normal model (list with mean vector mu and covariance
+#' matrix Sigma)
+#' @param dat matrix with observations in rows and dimensions in columns, passed to
+#' mvtnorm::mvnorm.
+#'
+#' @export
+model_lhood <- function(mod, dat, ...) mvtnorm::dmvnorm(dat, mod$mu, mod$Sigma, ...)
+
+#' Marginal likelihood of data under mixture model
+#'
+#' Calls \link{\code{model_lhood}} on each model and takes the average (assumes
+#' equal prior/mixing weights)
+#'
+#' @param data matrix with observations in rows and dimensions in columns
+#' @param mods list of models in mixture.
+#' @param log =TRUE returns log likelihood (default)
+#' @param ... additional arguments passed nspvowels::model_lhood (mvtnorm::dmvnorm)
+#' @return vector with marginal likelihood for each row in data.
+#'
+#' @export
+marginal_model_lhood <- function(data, mods, log=TRUE, ...) {
+  if (log) agg_fun = log_mean_exp
+  else     agg_fun = mean
+
+  mods %>%
+    map(~ model_lhood(., data, log=log, ...)) %>%
+                                        # list of vowels (log)lhood vectors
+    do.call(rbind, .) %>%               # vowel x token matrix
+    apply(., 2, agg_fun)                # marginal token lhoods
+}
+
 
 #' Use trained models to classify observed formant values
 #'

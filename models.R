@@ -1,5 +1,5 @@
-library(dplyr)                          # just for %>%
-## Training and evaluating models
+#' @importFrom magrittr %>%
+NULL
 
 #' Train models on specified grouping variable.
 #'
