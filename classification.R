@@ -53,6 +53,15 @@ marginal_model_lhood <- function(mods, data, log=TRUE, ...) {
     apply(., 2, agg_fun)                # marginal token lhoods
 }
 
+#' Convert data frame of models to named list
+#'
+#' @param d data.frame of models
+#' @param names_col name of column to be used for names
+#' @param model_col ='model' name of column with models
+#' @return a named list of models
+list_models <- function(d, names_col, model_field='model')
+  set_names(d[[model_field]], d[[names_col]]) %>% as.list()
+
 
 #' Use trained models to classify observed formant values
 #'
@@ -76,7 +85,7 @@ classify_mods <- function(data, models,
   ## make a named list of vowel models for each group
   model_lists <-
     models %>%
-    do(models = purrr::set_names(.$model, .$Vowel))
+    do(models = list_models(., 'Vowel'))
 
   ## A more efficient implementation than rowwise: get a matrix of all the data in
   ## a group that draws on the same models, to take advantage of vectorization
