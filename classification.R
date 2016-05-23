@@ -35,14 +35,14 @@ model_lhood <- function(mod, dat, ...) mvtnorm::dmvnorm(dat, mod$mu, mod$Sigma, 
 #' Calls \link{\code{model_lhood}} on each model and takes the average (assumes
 #' equal prior/mixing weights)
 #'
-#' @param data matrix with observations in rows and dimensions in columns
 #' @param mods list of models in mixture.
+#' @param data matrix with observations in rows and dimensions in columns
 #' @param log =TRUE returns log likelihood (default)
 #' @param ... additional arguments passed nspvowels::model_lhood (mvtnorm::dmvnorm)
 #' @return vector with marginal likelihood for each row in data.
 #'
 #' @export
-marginal_model_lhood <- function(data, mods, log=TRUE, ...) {
+marginal_model_lhood <- function(mods, data, log=TRUE, ...) {
   if (log) agg_fun = log_mean_exp
   else     agg_fun = mean
 
