@@ -1,6 +1,20 @@
 #' @importFrom magrittr %>%
 NULL
 
+
+#' Extract matrix of formants from data frame columns
+#'
+#' @param d data frame
+#' @param formants =c('F1', 'F2') quoted names of columns to pull out
+#' @return matrix with values from named columns
+#'
+#' @export
+formants_matrix <- function(d, formants=c('F1', 'F2'))
+  d %>%
+    select_(.dots=formants) %>%
+    as.matrix()
+
+
 #' Train models on specified grouping variable.
 #'
 #' Grouping defaults to Vowels, and will be added to any grouping already
@@ -27,9 +41,8 @@ train_models <- function(data, grouping="Vowel", formants=c("F1", "F2"),
   models <-
     data %>%
     dplyr::group_by_(.dots = grouping, add=add_groups) %>%
-    dplyr::select_(.dots = formants) %>%
     tidyr::nest() %>%
-    mutate(data = purrr::map(data, as.matrix),
+    mutate(data = map(data, ~ formants_matrix(.x, formants)),
            model = purrr::map(data,
                               ~ list(mu    = apply(., 2, mean),
                                      Sigma = cov(.))))
