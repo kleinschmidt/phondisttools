@@ -53,6 +53,21 @@ marginal_model_lhood <- function(mods, data, log=TRUE, ...) {
     apply(., 2, agg_fun)                # marginal token lhoods
 }
 
+
+#' @param data data.frame with columns F1 and F2 (passed to marginal_model_lhood)
+#' @param model_list list of models to calculate likelihood
+#' @param lhood_fun likelihood function
+#' @return data.frame of likelihoods, with one column per model, one row per row
+#' in data
+apply_model_list <- function(data, model_list, lhood_fun) {
+  model_list %>%
+    map(~ lhood_fun(., formants_matrix(data))) %>%
+    ## do.call(rbind, .) %>%
+    ## t() %>%                            # matrix with Dialect as cols
+    as_data_frame()                       # data frame with Dialect as cols
+}
+
+
 #' Convert data frame of models to named list
 #'
 #' @param d data.frame of models
@@ -116,4 +131,41 @@ classify_vowels <- function(data, models,
     unnest(data, model_class) %>%
     mutate(correct = model_class == Vowel)
   
+}
+
+
+
+
+#' Classify test data with cross-validated models
+#'
+#' See \code{\link{train_models_indexical_with_holdout}}.
+#' 
+#' @param data_and_models output of train_models_indexical_with_holdout.
+#' @return Data frame with one row per combination of data row and model, with
+#'   columns corresponding to the held-out and grouping variables, plus model,
+#'   lhood (total log-likelihood of data under model), log_posterior, posterior,
+#'   and posterior_choice (1 for the MAP model and 0 otherwise)
+#'
+#' @export
+classify_indexical_with_holdout <- function(data_and_models) {
+
+  lhoods_to_posterior <- function(lhoods) {
+    lhoods %>%
+      group_by_('model') %>%
+      summarise(lhood = sum(lhood)) %>%     # aggregate log-lhood within talkers
+      # normalize to get posterior
+      mutate(log_posterior = lhood - log_sum_exp(lhood),
+             posterior = exp(log_posterior),
+             posterior_choice = as.numeric(posterior == max(posterior)))
+  }
+
+  data_and_models %>%
+    mutate(lhoods = map2(data_test, models,
+                         ~ apply_model_list(.x, .y, marginal_model_lhood)),
+           posteriors = map(lhoods,
+                            . %>%
+                              gather(model, lhood, everything()) %>%
+                              lhoods_to_posterior())) %>%
+    unnest(posteriors)
+
 }

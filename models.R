@@ -54,3 +54,63 @@ train_models <- function(data, grouping="Vowel", formants=c("F1", "F2"),
     models
   }
 }
+
+#' Split data into training and test sets
+#'
+#' @param d data frame
+#' @param holdout quoted name of column that defines train/test splits.
+#' @param groups quoted name of column(s) to group training data by. optional,
+#'   will be preserved in output (and added as grouping to training data).
+#' @return data frame with columns `data_train`, `data_test`, one for each level
+#'   of holdout and group (if specified), which are also included. `data_test`
+#'   has the corresponding subset of the input data, and `data_train` has the
+#'   rest.
+train_test_split <- function(d, holdout, groups=NULL) {
+
+  d %>%
+    group_by_(holdout) %>%
+    summarise() %>%
+    purrr::by_row(~ anti_join(d, ., by=holdout) %>%
+                    group_by_(.dots=groups),
+                  .to = 'data_train') %>%
+    inner_join(d %>%
+                 group_by_(holdout, .dots=groups) %>%
+                 nest(.key='data_test'),
+               by = holdout)
+
+}
+
+#' Train indexical models with cross-validation
+#'
+#' Combines \code{\link{train_test_split}}, \code{\link{train_models}}, and
+#' \code{\link{list_models}} to produce a list of indexical groups' models.
+#'
+#' Each group's indexical model is a mixture of models at the linguistic level
+#' (defaults to Vowel)
+#' 
+#' @param d data frame (a la `nsp_vows`)
+#' @param groups quoted name of indexical grouping variable column (e.g.,
+#'   'Dialect'). One model will be created for each level of this variable.
+#' @param category ='Vowel' quoted name of column for linguistic category. Each
+#'   indexical group's model is a list of individual Vowel models
+#' @param holdout ='Talker' unit to perform cross-validation on. one row per
+#'   level of this variable is created with models trained after removing the
+#'   corresponding level.
+#' @return the dataframe returned by \code{\link{train_test_split}}, plus a
+#'   models list column, each entry of which is a model for one level of
+#'   \code{groups} after holding out that row's Talker (or level of holdout).
+train_models_indexical_with_holdout <- function(d, groups,
+                                                category='Vowel',
+                                                holdout='Talker') {
+
+  # TODO: can be made much more efficient by only re-training the model for the
+  # matching dialect.
+  d %>%
+    train_test_split(holdout=holdout, groups=groups) %>%
+    mutate(models = map(data_train,
+                        ~ .x %>%
+                          train_models() %>%
+                          by_slice(~ list_models(., category), .to='model') %>%
+                          list_models(groups)))
+
+}
