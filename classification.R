@@ -74,9 +74,21 @@ apply_model_list <- function(data, model_list, lhood_fun) {
 #' @param names_col name of column to be used for names
 #' @param model_col ='model' name of column with models
 #' @return a named list of models
+#' @export
 list_models <- function(d, names_col, model_field='model')
   set_names(d[[model_field]], d[[names_col]]) %>% as.list()
 
+#' Convert named list of models to data frame
+#'
+#' Undoes \code{\link{list_models}}
+#' 
+#' @param l named list of models
+#' @param names_col name of column generated for names
+#' @param model_col ='model' name of column generated for models
+#' @return a data frame with names in names_col and models in model_col
+#' @export
+unlist_models <- function(l, names_col, model_col='model')
+  data_frame(names(l), l) %>% set_names(c(names_col, model_col))
 
 #' Use trained models to classify observed formant values
 #'
