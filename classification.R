@@ -1,6 +1,7 @@
 #' @import purrr
 #' @import dplyr
 #' @import tidyr
+#' @import assertthat
 NULL
 
 #' Numerically stable sum of logged nubmers
@@ -108,6 +109,10 @@ add_id_col = function(x) mutate(x, id_=row_number())
 #' @export
 classify_vowels <- function(data, models,
                             formants=names(models$model[[1]]$mu)) {
+
+
+  assert_that(is.data.frame(models))
+  assert_that(is.data.frame(data))
 
   model_groups <- groups(models)
   if (is.null(model_groups)) {
