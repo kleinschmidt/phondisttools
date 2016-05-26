@@ -165,7 +165,8 @@ classify_vowels <- function(data, models,
 #'
 #' See \code{\link{train_models_indexical_with_holdout}}.
 #' 
-#' @param data_and_models output of train_models_indexical_with_holdout.
+#' @param data_and_models output of train_models_indexical_with_holdout
+#'   (required columns are data_test and models)
 #' @return Data frame with one row per combination of data row and model, with
 #'   columns corresponding to the held-out and grouping variables, plus model,
 #'   lhood (total log-likelihood of data under model), log_posterior, posterior,
