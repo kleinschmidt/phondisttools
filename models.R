@@ -99,6 +99,8 @@ train_test_split <- function(d, holdout, groups=NULL) {
 #' @return the dataframe returned by \code{\link{train_test_split}}, plus a
 #'   models list column, each entry of which is a model for one level of
 #'   \code{groups} after holding out that row's Talker (or level of holdout).
+#'
+#' @export
 train_models_indexical_with_holdout <- function(d, groups,
                                                 category='Vowel',
                                                 holdout='Talker') {
@@ -113,4 +115,61 @@ train_models_indexical_with_holdout <- function(d, groups,
                           by_slice(~ list_models(., category), .to='model') %>%
                           list_models(groups)))
 
+}
+
+
+#' Randomly subsample data by group
+#'
+#' Subsampling will be done at the level of the specified variable,
+#' \emph{within} any grouping that already exists in the input tbl.
+#'
+#' @param tbl tbl of data
+#' @param group (quoted) grouping variable
+#' @param n number of samples
+#' @return A tbl with \code{n} levels of \code{group} randomly sampled within
+#'   each existing grouping level of \code{tbl} randomly sampled from
+#'   \code{tbl}. Any grouping of \code{tbl} is preserved in the return value.
+sample_n_groups <- function(tbl, group, n) {
+  tbl_groups <- tbl %>% groups() %>% as.character()
+  tbl %>%
+    group_by_(group, add=TRUE) %>%
+    summarise() %>%
+    group_by_(.dots=tbl_groups) %>%
+    sample_n(n) %>%
+    left_join(tbl, by=c(group, tbl_groups))
+}
+
+
+#' Train indexical group models with holdout and subsampling talkers
+#'
+#' Like \code{\link{train_models_indexical_with_holdout}}, but randomly
+#' sub-samples training data to have specified number of talkers.
+#'
+#' @param d data frame (a la `nsp_vows`)
+#' @param groups quoted name of indexical grouping variable column (e.g.,
+#'   'Dialect'). One model will be created for each level of this variable.
+#' @param n_subsample Number of holdout levels to subsample for training data.
+#' @param category ='Vowel' quoted name of column for linguistic category. Each
+#'   indexical group's model is a list of individual Vowel models
+#' @param holdout ='Talker' unit to perform cross-validation on. one row per
+#'   level of this variable is created with models trained after removing the
+#'   corresponding level.
+#' @return the dataframe returned by \code{\link{train_test_split}}, with
+#'   data_train replaced by the subsampled version for each talker, plus a
+#'   models list column, each entry of which is a model for one level of
+#'   \code{groups} after holding out that row's Talker (or level of holdout).
+#' 
+#' @export
+train_models_indexical_subsample_holdout <- function(d, groups, n_subsample,
+                                                     category = 'Vowel',
+                                                     holdout = 'Talker') {
+  d %>%
+    train_test_split(holdout = holdout, groups = groups) %>%
+    mutate(data_train = map(data_train,
+                            . %>% sample_n_groups(holdout, n_subsample)),
+           models = map(data_train,
+                        ~ .x %>%
+                          train_models() %>%
+                          by_slice(~ list_models(., category), .to='model') %>%
+                          list_models(groups)))
 }
