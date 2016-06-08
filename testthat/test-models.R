@@ -1,5 +1,18 @@
 context("Models lists")
 
+test_that("Models list and unlist", {
+
+  m <- nsp_vows %>%
+    mutate(Vowel = as.character(Vowel)) %>%
+    train_models()
+
+  m2 <- m %>% list_models('Vowel') %>% unlist_models('Vowel')
+
+  expect_equal(m$Vowel, m2$Vowel)
+  expect_equivalent(m$model, m2$model)  # ignore names
+
+})
+
 test_that("Model lists nest correctly", {
   dialect_model_list <-
     nsp_vows %>%
