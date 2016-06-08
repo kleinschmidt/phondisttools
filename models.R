@@ -96,6 +96,7 @@ train_test_split <- function(d, holdout, groups=NULL) {
 #' @param holdout ='Talker' unit to perform cross-validation on. one row per
 #'   level of this variable is created with models trained after removing the
 #'   corresponding level.
+#' @param ... additional arguments are passed to \code{\link{train_models}}
 #' @return the dataframe returned by \code{\link{train_test_split}}, plus a
 #'   models list column, each entry of which is a model for one level of
 #'   \code{groups} after holding out that row's Talker (or level of holdout).
@@ -103,7 +104,10 @@ train_test_split <- function(d, holdout, groups=NULL) {
 #' @export
 train_models_indexical_with_holdout <- function(d, groups,
                                                 category='Vowel',
-                                                holdout='Talker') {
+                                                holdout='Talker',
+                                                ...) {
+
+  train <- partial(train_models, ...)
 
   # TODO: can be made much more efficient by only re-training the model for the
   # matching dialect.
@@ -111,7 +115,7 @@ train_models_indexical_with_holdout <- function(d, groups,
     train_test_split(holdout=holdout, groups=groups) %>%
     mutate(models = map(data_train,
                         ~ .x %>%
-                          train_models() %>%
+                          train() %>%
                           by_slice(~ list_models(., category), .to='model') %>%
                           list_models(groups)))
 
