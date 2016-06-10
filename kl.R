@@ -48,20 +48,27 @@ KL.bvnorm <- function(
     Sigma2 <- sigma2
 
   ## ------------------
-  # SHOULD THE LOG BE BASE 2 ???
-  kl <- .5 * (log2(det(Sigma2) / det(Sigma1)) - 
+  ## (Dividing by log(2) gives KL in bits)
+  kl <- .5 * (log(det(Sigma2) / det(Sigma1)) - 
           dim(Sigma1)[1] + 
           psych::tr(solve(Sigma2)%*%Sigma1) +
           t(mu2-mu1) %*% solve(Sigma2) %*% (mu2-mu1)
-        )
+        ) / log(2)
         
   return(kl)
 }
 
-#' Compute KL divergence between two models
+#' Compute KL divergence of one model from a second
 #'
-#' @param mod1 Model, a list with fields mu and Sigma
-#' @param mod2
+#' The KL divergence of mod2 from mod1 is the cost (in bits) of encoding data
+#' drawn from the distribution of the true model (\code{mod1}) using a code that
+#' is optimized for another model's distribution (\code{mod2}). That is, it
+#' measures how much it hurts to think that data is coming from \code{mod2} when
+#' it's actually generated from \code{mod1}.
+#'
+#' @param mod1 true model (list with fields mu and Sigma)
+#' @param mod2 other model
+#' @return KL divergence of mod2 (candidate) from mod1 (true model), in bits.
 #'
 #' @export
 KL_mods <- function(mod1, mod2) {
