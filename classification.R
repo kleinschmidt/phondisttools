@@ -4,23 +4,6 @@
 #' @import assertthat
 NULL
 
-#' Numerically stable sum of logged nubmers
-#'
-#' @param x a numeric vector of logged values.
-#' @return log of the sum of the exponentiated entries in x.
-log_sum_exp <- function(x) {
-  max_x <- max(x)
-  log(sum(exp(x - max_x))) + max_x
-}
-#' Numerically stable mean of logged numbers
-#'
-#' Use for, e.g., calculating marginal log-likelihood
-#'
-#' @param x a numeric vector of logged values
-#' @return the log of the mean of the exponentiated entries in x.
-log_mean_exp <- function(x) log_sum_exp(x) - log(length(x))
-
-
 #' Likelihood of data under one vowel's model
 #'
 #' @param mod multivariate normal model (list with mean vector mu and covariance
