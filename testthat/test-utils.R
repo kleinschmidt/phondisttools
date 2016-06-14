@@ -13,3 +13,14 @@ test_that("subtracting log_sum_exp normalizes to sum to 1", {
   x_norm <- x - log_sum_exp(x)
   expect_equal(sum(exp(x_norm)), 1)
 })
+
+test_that("log_sum_exp of Inf and anything is Inf", {
+  expect_equal(log_sum_exp(Inf), Inf)
+  expect_equal(log_sum_exp(c(0, Inf)), Inf)
+})
+
+test_that("log_sum_exp of -Inf and anything is log_sum_exp of non-infinite", {
+  expect_equal(log_sum_exp(-Inf), -Inf)
+  expect_equal(log_sum_exp(c(0, -Inf)), 0)
+  expect_equal(log_sum_exp(c(-Inf, Inf)), Inf)
+})
