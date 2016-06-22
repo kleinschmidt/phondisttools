@@ -65,6 +65,8 @@ train_models <- function(data, grouping="Vowel", formants=c("F1", "F2"),
 #'   of holdout and group (if specified), which are also included. `data_test`
 #'   has the corresponding subset of the input data, and `data_train` has the
 #'   rest.
+#'
+#' @export
 train_test_split <- function(d, holdout, groups=NULL) {
 
   d %>%
@@ -133,6 +135,8 @@ train_models_indexical_with_holdout <- function(d, groups,
 #' @return A tbl with \code{n} levels of \code{group} randomly sampled within
 #'   each existing grouping level of \code{tbl} randomly sampled from
 #'   \code{tbl}. Any grouping of \code{tbl} is preserved in the return value.
+#'
+#' @export
 sample_n_groups <- function(tbl, group, n) {
   tbl_groups <- tbl %>% groups() %>% as.character()
   tbl %>%
