@@ -206,3 +206,33 @@ classify_indexical_with_holdout <- function(data_and_models) {
     unnest(posteriors)
 
 }
+
+
+#' Two methods to compute accuracy from classifier
+#'
+#' @param tbl classifier output
+#' @param category_col name of column specifying true category
+#' @param method if 'choice' (default), accuracy is 1 if choice is correct,
+#'   0 if not. if 'posterior', accuracy is posterior probability of true
+#'   category
+#' @return tbl with accuracy in column \code{accuracy}
+#'
+#' @export
+get_accuracy <- function(tbl, category_col, method='choice') {
+  assert_that(method %in% c('choice', 'posterior'))
+  assert_that(has_name(tbl, category_col))
+
+  category_eq_mod <- lazyeval::interp(~var==category_model,
+                                      var=as.name(category_col))
+
+  if (method == 'choice') {
+    tbl %>%
+      filter(posterior_choice) %>%
+      mutate_(accuracy = category_eq_mod)
+  } else if (method == 'posterior') {
+    tbl %>%
+      filter_(category_eq_mod) %>%
+      mutate_(accuracy = ~ posterior)
+  }
+
+}
