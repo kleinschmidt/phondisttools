@@ -49,14 +49,21 @@ marginal_model_lhood <- function(mods, data, log=TRUE, ...) {
 #' @return a matrix with observations in rows and dimensions in columns.
 #' @export
 model_matrix <- function(model, data) {
-  model_len <- length(model)
+
+  ## traverse list of models depth first to find basic model with 'mu' field to
+  ## get colnames
   while (! 'mu' %in% names(model)) {
-    model <- flatten(model)
-    assert_that(length(model) > model_len) # check for infinite loop here :)
+    ## check for infinite loop here :)
+    if (is.atomic(model)) {
+      stop("Can't find fitted means named 'mu' to determine cue columns in new data'")
+    }
+    model <- model[[1]]
   }
 
+  cue_columns <- names(model$mu)
+
   data %>%
-    select_(.dots = names(model$mu)) %>%
+    select_(.dots = cue_columns) %>%
     as.matrix()
 }
 
@@ -80,12 +87,17 @@ apply_model_list <- function(data, model_list, lhood_fun) {
 #' Convert data frame of models to named list
 #'
 #' @param d data.frame of models
-#' @param names_col name of column to be used for names
+#' @param names_col (optional) name of column to be used for names of models
 #' @param model_col ='model' name of column with models
 #' @return a named list of models
 #' @export
-list_models <- function(d, names_col, model_field='model')
-  set_names(d[[model_field]], d[[names_col]]) %>% as.list()
+list_models <- function(d, names_col=NULL, model_field='model') {
+  models <- d[[model_field]] %>% as.list()
+  if (!is.null(names_col)) {
+    names(models) <- d[[names_col]]
+  }
+  return(models)
+}
 
 #' Convert named list of models to data frame
 #'
