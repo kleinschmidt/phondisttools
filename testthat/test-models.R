@@ -1,3 +1,5 @@
+library(magrittr)
+
 context("Models lists")
 
 test_that("Models list and unlist", {
@@ -32,29 +34,33 @@ test_that("Model lists nest correctly", {
 
 context("model_matrix")
 
+mm2 <-
+  nsp_vows %>%
+  train_models(formants = c('F1', 'F2')) %>%
+  list_models('Vowel') %>%
+  model_matrix(nsp_vows)
+
+mm1 <-
+  nsp_vows %>%
+  train_models(formants = 'F1') %>%
+  list_models('Vowel') %>%
+  model_matrix(nsp_vows)
+
 test_that("Model matrix is numeric", {
 
-  nsp_vows %>%
-    train_models(formants = c('F1', 'F2')) %>%
-    list_models('Vowel') %>%
-    model_matrix(nsp_vows) %>%
-    expect_type("double")
+  mm2 %T>%
+    expect_type("integer") %T>%         # because of nsp_vows F1/F2 types
+    expect_is("matrix")
 
 })
 
 test_that("Model matrix has correct dimensions", {
 
-  nsp_vows %>%
-    train_models(formants = c('F1', 'F2')) %>%
-    list_models('Vowel') %>%
-    model_matrix(nsp_vows) %>%
+  mm2 %>%
     dim() %>%
     expect_equal(c(nrow(nsp_vows), 2))
 
-  nsp_vows %>%
-    train_models(formants = 'F1') %>%
-    list_models('Vowel') %>%
-    model_matrix(nsp_vows) %>%
+  mm1 %>%
     dim() %>%
     expect_equal(c(nrow(nsp_vows), 1))
 
@@ -62,17 +68,11 @@ test_that("Model matrix has correct dimensions", {
 
 test_that("Dimension names are extracted from models when testing", {
 
-  nsp_vows %>%
-    train_models(formants = c('F1', 'F2')) %>%
-    list_models('Vowel') %>%
-    model_matrix(nsp_vows) %>%
+  mm2 %>%
     colnames() %>% 
     expect_equal(c('F1', 'F2'))
 
-  nsp_vows %>%
-    train_models(formants = 'F1') %>%
-    list_models('Vowel') %>%
-    model_matrix(nsp_vows) %>%
+  mm1 %>%
     colnames() %>% 
     expect_equal('F1')
 
