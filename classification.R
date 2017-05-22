@@ -2,6 +2,7 @@
 #' @import dplyr
 #' @import tidyr
 #' @import assertthat
+#' @importFrom mvtnorm dmvnorm
 NULL
 
 #' Likelihood of data under one vowel's model
@@ -10,13 +11,14 @@ NULL
 #' matrix Sigma)
 #' @param dat matrix with observations in rows and dimensions in columns, passed to
 #' mvtnorm::mvnorm.
+#' @param ... additional arguments are passed to dmvnorm
 #'
 #' @export
 model_lhood <- function(mod, dat, ...) mvtnorm::dmvnorm(dat, mod$mu, mod$Sigma, ...)
 
 #' Marginal likelihood of data under mixture model
 #'
-#' Calls \link{\code{model_lhood}} on each model and takes the average (assumes
+#' Calls \code{\link{model_lhood}} on each model and takes the average (assumes
 #' equal prior/mixing weights)
 #'
 #' @param mods list of models in mixture.
@@ -90,7 +92,7 @@ apply_model_list <- function(data, model_list, lhood_fun) {
 #'
 #' @param d data.frame of models
 #' @param names_col (optional) name of column to be used for names of models
-#' @param model_col ='model' name of column with models
+#' @param model_field ='model' name of column with models
 #' @return a named list of models
 #' @export
 list_models <- function(d, names_col=NULL, model_field='model') {

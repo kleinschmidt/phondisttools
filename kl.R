@@ -1,3 +1,6 @@
+#' @importFrom psych tr
+NULL
+
 ## Functions for calculating KL divergence between vowel distributions
 
 #' make a 2D variance-covariance matrix from a vector of vars and covar
@@ -17,7 +20,7 @@ covar2D = function(dim1, dim2, cov12) {
 #'
 #' @param mu1,mu2 mean vector of two distributions
 #' @param sigma1,sigma2 covariance matrix in lower triangular vector (see
-#'   \link{\code{covar2D}}) or matrix form
+#'   \code{\link{covar2D}}) or matrix form
 #'
 #' @export
 KL.bvnorm <- function(
