@@ -32,6 +32,34 @@ test_that("Model lists nest correctly", {
 
 context("model_matrix")
 
+test_that("Model matrix is numeric", {
+
+  nsp_vows %>%
+    train_models(formants = c('F1', 'F2')) %>%
+    list_models('Vowel') %>%
+    model_matrix(nsp_vows) %>%
+    expect_type("double")
+
+})
+
+test_that("Model matrix has correct dimensions", {
+
+  nsp_vows %>%
+    train_models(formants = c('F1', 'F2')) %>%
+    list_models('Vowel') %>%
+    model_matrix(nsp_vows) %>%
+    dim() %>%
+    expect_equal(c(nrow(nsp_vows), 2))
+
+  nsp_vows %>%
+    train_models(formants = 'F1') %>%
+    list_models('Vowel') %>%
+    model_matrix(nsp_vows) %>%
+    dim() %>%
+    expect_equal(c(nrow(nsp_vows), 1))
+
+})
+
 test_that("Dimension names are extracted from models when testing", {
 
   nsp_vows %>%
