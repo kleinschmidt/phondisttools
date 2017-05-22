@@ -1,4 +1,4 @@
-#' @import purrr
+#' @importFrom purrr map map2
 #' @import dplyr
 #' @import tidyr
 #' @import assertthat

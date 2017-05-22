@@ -72,9 +72,9 @@ train_test_split <- function(d, holdout, groups=NULL) {
   d %>%
     group_by_(holdout) %>%
     summarise() %>%
-    purrr::by_row(~ anti_join(d, ., by=holdout) %>%
-                    group_by_(.dots=groups),
-                  .to = 'data_train') %>%
+    purrrlyr::by_row(~ anti_join(d, ., by=holdout) %>%
+                       group_by_(.dots=groups),
+                     .to = 'data_train') %>%
     inner_join(d %>%
                  group_by_(holdout, .dots=groups) %>%
                  nest(.key='data_test'),
