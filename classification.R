@@ -63,6 +63,7 @@ model_matrix <- function(model, data) {
   cue_columns <- names(model$mu)
 
   data %>%
+    ungroup() %>%
     select_(.dots = cue_columns) %>%
     as.matrix()
 }
