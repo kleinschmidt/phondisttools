@@ -74,6 +74,7 @@ model_matrix <- function(model, data) {
 #' @param lhood_fun likelihood function
 #' @return data.frame of likelihoods, with one column per model, one row per row
 #' in data
+#' @export
 apply_model_list <- function(data, model_list, lhood_fun) {
   data_mat <- model_matrix(model_list, data)
   model_list %>%
@@ -188,8 +189,9 @@ classify_vowels <- function(data, models) classify(data, models, category='Vowel
 #'
 #' See \code{\link{train_models_indexical_with_holdout}}.
 #' 
-#' @param data_and_models output of train_models_indexical_with_holdout
-#'   (required columns are data_test and models)
+#' @param data_and_models output of train_models_indexical_with_holdout, with
+#'   one row per talker (or holdout grouping level), and list columns for
+#'   \code{data_test} and \code{models}.
 #' @return Data frame with one row per combination of data row and model, with
 #'   columns corresponding to the held-out and grouping variables, plus model,
 #'   lhood (total log-likelihood of data under model), log_posterior, posterior,

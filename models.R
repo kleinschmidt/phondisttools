@@ -20,7 +20,7 @@ formants_matrix <- function(d, formants=c('F1', 'F2'))
 #' Grouping defaults to Vowels, and will be added to any grouping already
 #' present by default.
 #'
-#' @param data
+#' @param data Data source with columns for grouping and "formants"
 #' @param grouping quoted column names to group by (strings, `quote`, or `~`)
 #'   (default "Vowels")
 #' @param formants quoted column names containing formants (or other measures).
