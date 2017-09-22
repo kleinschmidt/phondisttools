@@ -126,24 +126,26 @@ train_models_indexical_with_holdout <- function(d, groups,
 
 #' Randomly subsample data by group
 #'
-#' Subsampling will be done at the level of the specified variable,
-#' \emph{within} any grouping that already exists in the input tbl.
+#' Wraps dplyr::sample_n.  Subsampling will be done at the level of the
+#' specified \code{group} column, \emph{within} any grouping that already exists
+#' in the input tbl.
 #'
 #' @param tbl tbl of data
 #' @param group (quoted) grouping variable
 #' @param n number of samples
+#' @param ... additional arguments are passed to dplyr::sample_n.
 #' @return A tbl with \code{n} levels of \code{group} randomly sampled within
-#'   each existing grouping level of \code{tbl} randomly sampled from
-#'   \code{tbl}. Any grouping of \code{tbl} is preserved in the return value.
+#'   each existing grouping level of \code{tbl}. Any grouping of \code{tbl} is
+#'   preserved in the return value.
 #'
 #' @export
-sample_n_groups <- function(tbl, group, n) {
+sample_n_groups <- function(tbl, group, n, ...) {
   tbl_groups <- tbl %>% groups() %>% as.character()
   tbl %>%
     group_by_(group, add=TRUE) %>%
     summarise() %>%
     group_by_(.dots=tbl_groups) %>%
-    sample_n(n) %>%
+    sample_n(n, ...) %>%
     left_join(tbl, by=c(group, tbl_groups))
 }
 
