@@ -8,3 +8,18 @@ Depends: R (>= 3.4)
 License: MIT
 Encoding: UTF-8
 LazyData: true
+Imports:
+    mvtnorm (>= 1.0),
+    psych (>= 1.7.5),
+    purrr (>= 0.2.2),
+    purrrlyr (>= 0.0.2),
+    dplyr (>= 0.5),
+    tidyr (>= 0.6.3),
+    lazyeval (>= 0.2.0),
+    assertthat (>= 0.2.0),
+    magrittr (>= 1.5),
+    daver (>= 0.0.3)
+Remotes:
+    github::kleinschmidt/daver
+Suggests:
+    testthat
