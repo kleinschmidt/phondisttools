@@ -33,9 +33,9 @@ marginal_model_lhood <- function(mods, data, log=TRUE, ...) {
   else     agg_fun = mean
 
   mods %>%
-    map(~ model_lhood(., data, log=log, ...)) %>%
+    map(model_lhood, data, log=log, ...) %>%
                                         # list of vowels (log)lhood vectors
-    do.call(rbind, .) %>%               # vowel x token matrix
+    purrr::lift(rbind)() %>%               # vowel x token matrix
     apply(., 2, agg_fun)                # marginal token lhoods
 }
 
