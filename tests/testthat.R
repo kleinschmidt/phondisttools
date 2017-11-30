@@ -1,4 +1,4 @@
 library(testthat)
-library(nspvowels)
+library(phondisttools)
 
-test_check("nspvowels")
+test_check("phondisttools")
