@@ -2,7 +2,7 @@
 % Please edit documentation in R/kl.R
 \name{KL.bvnorm}
 \alias{KL.bvnorm}
-\title{Calculate the KL divergence between two bivariate Gaussians}
+\title{Calculate the KL divergence between two multivariate Gaussians}
 \usage{
 KL.bvnorm(mu1, sigma1, mu2, sigma2)
 }
@@ -13,5 +13,5 @@ KL.bvnorm(mu1, sigma1, mu2, sigma2)
 \code{\link{covar2D}}) or matrix form}
 }
 \description{
-Calculate the KL divergence between two bivariate Gaussians
+Calculate the KL divergence between two multivariate Gaussians
 }

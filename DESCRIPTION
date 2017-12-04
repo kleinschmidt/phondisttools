@@ -1,6 +1,6 @@
 Package: phondisttools
 Title: Tools for Analyzing Phonetic Cue Distributions
-Version: 0.0.0.9000
+Version: 0.0.1
 Authors@R: person("Dave", "Kleinschmidt", email = "dave.f.kleinschmidt@gmail.com", role = c("aut", "cre"))
 Description: Compute KL divergence and ideal observer classifier performance
   based on distributions of phonetic cues, estimated from corpora.

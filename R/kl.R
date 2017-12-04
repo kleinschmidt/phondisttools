@@ -17,7 +17,7 @@ covar2D = function(dim1, dim2, cov12) {
 }
 
 # TODO: this isn't just for bivariate
-#' Calculate the KL divergence between two bivariate Gaussians
+#' Calculate the KL divergence between two multivariate Gaussians
 #'
 #' @param mu1,mu2 mean vector of two distributions
 #' @param sigma1,sigma2 covariance matrix in lower triangular vector (see
