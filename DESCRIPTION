@@ -22,5 +22,6 @@ Imports:
 Remotes:
     github::kleinschmidt/daver
 Suggests:
-    testthat
+    testthat,
+    covr
 RoxygenNote: 6.0.1
