@@ -5,7 +5,7 @@
 #' @importFrom mvtnorm dmvnorm
 NULL
 
-#' Likelihood of data under one vowel's model
+#' Likelihood of data under one category's model
 #'
 #' @param mod multivariate normal model (list with mean vector mu and covariance
 #' matrix Sigma)
@@ -24,7 +24,7 @@ model_lhood <- function(mod, dat, ...) mvtnorm::dmvnorm(dat, mod$mu, mod$Sigma, 
 #' @param mods list of models in mixture.
 #' @param data matrix with observations in rows and dimensions in columns
 #' @param log =TRUE returns log likelihood (default)
-#' @param ... additional arguments passed nspvowels::model_lhood (mvtnorm::dmvnorm)
+#' @param ... additional arguments passed model_lhood (mvtnorm::dmvnorm)
 #' @return vector with marginal likelihood for each row in data.
 #'
 #' @export
@@ -34,8 +34,8 @@ marginal_model_lhood <- function(mods, data, log=TRUE, ...) {
 
   mods %>%
     map(model_lhood, data, log=log, ...) %>%
-                                        # list of vowels (log)lhood vectors
-    purrr::lift(rbind)() %>%               # vowel x token matrix
+                                        # list of categories' (log)lhood vectors
+    purrr::lift(rbind)() %>%               # category x token matrix
     apply(., 2, agg_fun)                # marginal token lhoods
 }
 
@@ -117,7 +117,7 @@ unlist_models <- function(l, names_col, model_col='model')
 
 add_id_col = function(x) mutate(x, id_=row_number())
 
-#' Use trained models to classify observed formant values
+#' Use trained models to classify observed cue values
 #'
 #' Names of columns are taken from the names of the first \code{mu} in models.
 #'
@@ -144,7 +144,7 @@ classify <- function(data, models, category) {
     data <- data %>% group_by_(.dots = model_groups)
   }
 
-  ## make a named list of vowel models for each group
+  ## make a named list of category models for each group
   model_lists <-
     models %>%
     do(models = list_models(., category))

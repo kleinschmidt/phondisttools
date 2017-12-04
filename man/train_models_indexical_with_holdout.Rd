@@ -4,8 +4,8 @@
 \alias{train_models_indexical_with_holdout}
 \title{Train indexical models with cross-validation}
 \usage{
-train_models_indexical_with_holdout(d, groups, category = "Vowel",
-  holdout = "Talker", ...)
+train_models_indexical_with_holdout(d, groups, category, holdout = "Talker",
+  ...)
 }
 \arguments{
 \item{d}{data frame (a la `nsp_vows`)}
@@ -13,8 +13,8 @@ train_models_indexical_with_holdout(d, groups, category = "Vowel",
 \item{groups}{quoted name of indexical grouping variable column (e.g.,
 'Dialect'). One model will be created for each level of this variable.}
 
-\item{category}{='Vowel' quoted name of column for linguistic category. Each
-indexical group's model is a list of individual Vowel models}
+\item{category}{quoted name of column for linguistic category. Each
+indexical group's model is a list of individual category models}
 
 \item{holdout}{='Talker' unit to perform cross-validation on. one row per
 level of this variable is created with models trained after removing the
@@ -33,5 +33,4 @@ Combines \code{\link{train_test_split}}, \code{\link{train_models}}, and
 }
 \details{
 Each group's indexical model is a mixture of models at the linguistic level
-(defaults to Vowel)
 }

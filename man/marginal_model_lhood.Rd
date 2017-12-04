@@ -13,7 +13,7 @@ marginal_model_lhood(mods, data, log = TRUE, ...)
 
 \item{log}{=TRUE returns log likelihood (default)}
 
-\item{...}{additional arguments passed nspvowels::model_lhood (mvtnorm::dmvnorm)}
+\item{...}{additional arguments passed model_lhood (mvtnorm::dmvnorm)}
 }
 \value{
 vector with marginal likelihood for each row in data.

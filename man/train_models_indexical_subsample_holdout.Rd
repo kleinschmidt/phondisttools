@@ -4,8 +4,8 @@
 \alias{train_models_indexical_subsample_holdout}
 \title{Train indexical group models with holdout and subsampling talkers}
 \usage{
-train_models_indexical_subsample_holdout(d, groups, n_subsample,
-  category = "Vowel", holdout = "Talker")
+train_models_indexical_subsample_holdout(d, groups, n_subsample, category,
+  holdout = "Talker")
 }
 \arguments{
 \item{d}{data frame (a la `nsp_vows`)}
@@ -15,8 +15,8 @@ train_models_indexical_subsample_holdout(d, groups, n_subsample,
 
 \item{n_subsample}{Number of holdout levels to subsample for training data.}
 
-\item{category}{='Vowel' quoted name of column for linguistic category. Each
-indexical group's model is a list of individual Vowel models}
+\item{category}{quoted name of column for linguistic category. Each indexical
+group's model is a list of individual category models}
 
 \item{holdout}{='Talker' unit to perform cross-validation on. one row per
 level of this variable is created with models trained after removing the

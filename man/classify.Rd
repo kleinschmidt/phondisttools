@@ -3,7 +3,7 @@
 \name{classify}
 \alias{classify}
 \alias{classify_vowels}
-\title{Use trained models to classify observed formant values}
+\title{Use trained models to classify observed cue values}
 \usage{
 classify(data, models, category)
 

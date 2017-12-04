@@ -2,29 +2,26 @@
 NULL
 
 
-#' Extract matrix of formants from data frame columns
+#' Extract matrix of cues from data frame columns
 #'
 #' @param d data frame
-#' @param formants =c('F1', 'F2') quoted names of columns to pull out
+#' @param cues quoted names of columns to pull out
 #' @return matrix with values from named columns
 #'
 #' @export
-formants_matrix <- function(d, formants=c('F1', 'F2'))
+cue_matrix <- function(d, cues)
   d %>%
-    select_(.dots=formants) %>%
+    select_(.dots=cues) %>%
     as.matrix()
 
 
 #' Train models on specified grouping variable.
 #'
-#' Grouping defaults to Vowels, and will be added to any grouping already
-#' present by default.
+#' Grouping will be added to any grouping already present by default.
 #'
-#' @param data Data source with columns for grouping and "formants"
+#' @param data Data source with columns for grouping and "cues"
 #' @param grouping quoted column names to group by (strings, `quote`, or `~`)
-#'   (default "Vowels")
-#' @param formants quoted column names containing formants (or other measures).
-#'   (default: c("F1", "F2"))
+#' @param cues quoted column names containing cues
 #' @param add_groups add `grouping` to existing groups, or overwrite (default TRUE)
 #'
 #' @return A data frame like for summarise, with columns for grouping factor, plus
@@ -33,8 +30,7 @@ formants_matrix <- function(d, formants=c('F1', 'F2'))
 #'   original grouping will be maintained.
 #'
 #' @export
-train_models <- function(data, grouping="Vowel", formants=c("F1", "F2"),
-                         add_groups=TRUE) {
+train_models <- function(data, grouping, cues, add_groups=TRUE) {
 
   existing_groups <- data %>% groups()
 
@@ -42,7 +38,7 @@ train_models <- function(data, grouping="Vowel", formants=c("F1", "F2"),
     data %>%
     dplyr::group_by_(.dots = grouping, add=add_groups) %>%
     tidyr::nest() %>%
-    mutate(data = map(data, ~ formants_matrix(.x, formants)),
+    mutate(data = map(data, ~ cue_matrix(.x, cues)),
            model = purrr::map(data,
                               ~ list(mu    = apply(., 2, mean),
                                      Sigma = cov(.))))
@@ -88,13 +84,12 @@ train_test_split <- function(d, holdout, groups=NULL) {
 #' \code{\link{list_models}} to produce a list of indexical groups' models.
 #'
 #' Each group's indexical model is a mixture of models at the linguistic level
-#' (defaults to Vowel)
 #' 
 #' @param d data frame (a la `nsp_vows`)
 #' @param groups quoted name of indexical grouping variable column (e.g.,
 #'   'Dialect'). One model will be created for each level of this variable.
-#' @param category ='Vowel' quoted name of column for linguistic category. Each
-#'   indexical group's model is a list of individual Vowel models
+#' @param category quoted name of column for linguistic category. Each
+#'   indexical group's model is a list of individual category models
 #' @param holdout ='Talker' unit to perform cross-validation on. one row per
 #'   level of this variable is created with models trained after removing the
 #'   corresponding level.
@@ -104,8 +99,7 @@ train_test_split <- function(d, holdout, groups=NULL) {
 #'   \code{groups} after holding out that row's Talker (or level of holdout).
 #'
 #' @export
-train_models_indexical_with_holdout <- function(d, groups,
-                                                category='Vowel',
+train_models_indexical_with_holdout <- function(d, groups, category,
                                                 holdout='Talker',
                                                 ...) {
 
@@ -159,8 +153,8 @@ sample_n_groups <- function(tbl, group, n, ...) {
 #' @param groups quoted name of indexical grouping variable column (e.g.,
 #'   'Dialect'). One model will be created for each level of this variable.
 #' @param n_subsample Number of holdout levels to subsample for training data.
-#' @param category ='Vowel' quoted name of column for linguistic category. Each
-#'   indexical group's model is a list of individual Vowel models
+#' @param category quoted name of column for linguistic category. Each indexical
+#'   group's model is a list of individual category models
 #' @param holdout ='Talker' unit to perform cross-validation on. one row per
 #'   level of this variable is created with models trained after removing the
 #'   corresponding level.
@@ -171,7 +165,7 @@ sample_n_groups <- function(tbl, group, n, ...) {
 #' 
 #' @export
 train_models_indexical_subsample_holdout <- function(d, groups, n_subsample,
-                                                     category = 'Vowel',
+                                                     category,
                                                      holdout = 'Talker') {
   d %>%
     train_test_split(holdout = holdout, groups = groups) %>%

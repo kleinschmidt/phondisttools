@@ -34,7 +34,7 @@ test_that("Models list and unlist", {
 
   m <- vowels %>%
     mutate(Vowel = as.character(Vowel)) %>%
-    train_models()
+    train_models(grouping="Vowel", cues=c("F1", "F2"))
 
   m2 <- m %>% list_models('Vowel') %>% unlist_models('Vowel')
 
@@ -47,7 +47,7 @@ test_that("Model lists nest correctly", {
   dialect_model_list <-
     vowels %>%
     group_by(Dialect) %>%
-    train_models() %>%
+    train_models(grouping="Vowel", cues=c("F1", "F2")) %>%
     do(model=list_models(., 'Vowel')) %>%
     list_models('Dialect')
 
@@ -64,13 +64,13 @@ context("model_matrix")
 
 mm2 <-
   vowels %>%
-  train_models(formants = c('F1', 'F2')) %>%
+  train_models(grouping = "Vowel", cues = c('F1', 'F2')) %>%
   list_models('Vowel') %>%
   model_matrix(vowels)
 
 mm1 <-
   vowels %>%
-  train_models(formants = 'F1') %>%
+  train_models(grouping = "Vowel", cues = 'F1') %>%
   list_models('Vowel') %>%
   model_matrix(vowels)
 
@@ -110,7 +110,7 @@ test_that("Multiply nested models' dimnames are extracted correctly", {
 
   vowels %>%
     group_by(Dialect) %>%
-    train_models(formants = c('F1', 'F2')) %>%
+    train_models(grouping="Vowel", cues = c('F1', 'F2')) %>%
     do(model=list_models(., 'Vowel')) %>%
     list_models('Dialect') %>%
     model_matrix(vowels) %>%
@@ -120,7 +120,7 @@ test_that("Multiply nested models' dimnames are extracted correctly", {
 
   vowels %>%
     group_by(Dialect) %>%
-    train_models(formants = 'F2') %>%
+    train_models(grouping="Vowel", cues = 'F2') %>%
     do(model=list_models(., 'Vowel')) %>%
     list_models('Dialect') %>%
     model_matrix(vowels) %>%

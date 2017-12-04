@@ -4,17 +4,14 @@
 \alias{train_models}
 \title{Train models on specified grouping variable.}
 \usage{
-train_models(data, grouping = "Vowel", formants = c("F1", "F2"),
-  add_groups = TRUE)
+train_models(data, grouping, cues, add_groups = TRUE)
 }
 \arguments{
-\item{data}{Data source with columns for grouping and "formants"}
+\item{data}{Data source with columns for grouping and "cues"}
 
-\item{grouping}{quoted column names to group by (strings, `quote`, or `~`)
-(default "Vowels")}
+\item{grouping}{quoted column names to group by (strings, `quote`, or `~`)}
 
-\item{formants}{quoted column names containing formants (or other measures).
-(default: c("F1", "F2"))}
+\item{cues}{quoted column names containing cues}
 
 \item{add_groups}{add `grouping` to existing groups, or overwrite (default TRUE)}
 }
@@ -25,6 +22,5 @@ A data frame like for summarise, with columns for grouping factor, plus
   original grouping will be maintained.
 }
 \description{
-Grouping defaults to Vowels, and will be added to any grouping already
-present by default.
+Grouping will be added to any grouping already present by default.
 }

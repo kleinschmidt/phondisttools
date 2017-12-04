@@ -2,7 +2,7 @@
 % Please edit documentation in R/classification.R
 \name{model_lhood}
 \alias{model_lhood}
-\title{Likelihood of data under one vowel's model}
+\title{Likelihood of data under one category's model}
 \usage{
 model_lhood(mod, dat, ...)
 }
@@ -16,5 +16,5 @@ mvtnorm::mvnorm.}
 \item{...}{additional arguments are passed to dmvnorm}
 }
 \description{
-Likelihood of data under one vowel's model
+Likelihood of data under one category's model
 }
