@@ -4,8 +4,8 @@
 \alias{train_models_indexical_subsample_holdout}
 \title{Train indexical group models with holdout and subsampling talkers}
 \usage{
-train_models_indexical_subsample_holdout(d, groups, n_subsample, category,
-  holdout = "Talker")
+train_models_indexical_subsample_holdout(d, groups, n_subsample, category, cues,
+  holdout = "Talker", ...)
 }
 \arguments{
 \item{d}{data frame (a la `nsp_vows`)}
@@ -18,9 +18,13 @@ train_models_indexical_subsample_holdout(d, groups, n_subsample, category,
 \item{category}{quoted name of column for linguistic category. Each indexical
 group's model is a list of individual category models}
 
+\item{cues}{quoted name(s) of column(s) with cue values}
+
 \item{holdout}{='Talker' unit to perform cross-validation on. one row per
 level of this variable is created with models trained after removing the
 corresponding level.}
+
+\item{...}{additional arguments are passed to \code{\link{train_models}}}
 }
 \value{
 the dataframe returned by \code{\link{train_test_split}}, with
