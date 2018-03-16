@@ -15,7 +15,7 @@ one row per talker (or holdout grouping level), and list columns for
 Data frame with one row per combination of data row and model, with
   columns corresponding to the held-out and grouping variables, plus model,
   lhood (total log-likelihood of data under model), log_posterior, posterior,
-  and posterior_choice (1 for the MAP model and 0 otherwise)
+  and posterior_choice (TRUE for the MAP model and FALSE otherwise)
 }
 \description{
 See \code{\link{train_models_indexical_with_holdout}}.

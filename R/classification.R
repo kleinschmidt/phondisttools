@@ -198,7 +198,7 @@ classify_vowels <- function(data, models) classify(data, models, category='Vowel
 #' @return Data frame with one row per combination of data row and model, with
 #'   columns corresponding to the held-out and grouping variables, plus model,
 #'   lhood (total log-likelihood of data under model), log_posterior, posterior,
-#'   and posterior_choice (1 for the MAP model and 0 otherwise)
+#'   and posterior_choice (TRUE for the MAP model and FALSE otherwise)
 #'
 #' @export
 classify_indexical_with_holdout <- function(data_and_models) {
@@ -210,7 +210,7 @@ classify_indexical_with_holdout <- function(data_and_models) {
       # normalize to get posterior
       mutate(log_posterior = lhood - log_sum_exp(lhood),
              posterior = exp(log_posterior),
-             posterior_choice = as.numeric(posterior == max(posterior)))
+             posterior_choice = posterior == max(posterior))
   }
 
   data_and_models %>%
