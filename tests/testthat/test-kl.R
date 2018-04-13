@@ -18,3 +18,8 @@ test_that("KL is >= 0, and 0 only for identical distributions", {
   expect_true(KL_mvnorm(c(0,0), diag(c(1,1)), c(0,0), diag(c(1,2))) > 0)
   expect_true(KL_mvnorm(c(0,0), diag(c(1,1)), c(1,0), matrix(c(1,0.1,0.1,1), 2)) > 0)
 })
+
+test_that("KL_mods unpacks mu and Sigma from model lists", {
+  expect_equal(KL_mods(list(mu=c(0,0), Sigma=diag(2)), list(mu=c(1,2), Sigma=diag(2)*1.3)),
+               KL_mvnorm(c(0,0), diag(2), c(1,2), diag(2)*1.3))
+})
