@@ -5,7 +5,7 @@ Authors@R: person("Dave", "Kleinschmidt", email = "dave.f.kleinschmidt@gmail.com
 Description: Compute KL divergence and ideal observer classifier performance
   based on distributions of phonetic cues, estimated from corpora.
 Depends: R (>= 3.4)
-License: MIT
+License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
 Imports:
