@@ -5,7 +5,7 @@ NULL
 #' Expand lower-triangular vector to full matrix
 #'
 #' @param lower_tri_vec Lower triangular vector of length p*(p+1)/2
-#' @param return Symmetric, square p×p matrix
+#' @return Symmetric, square p×p matrix
 lower_tri_to_full <- function(lower_tri_vec) {
   assert_that(is.vector(lower_tri_vec))
   # lower tri has p*(p+1)/2 = n elements.  solve for n:

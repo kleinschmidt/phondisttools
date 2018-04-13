@@ -8,8 +8,9 @@ lower_tri_to_full(lower_tri_vec)
 }
 \arguments{
 \item{lower_tri_vec}{Lower triangular vector of length p*(p+1)/2}
-
-\item{return}{Symmetric, square p×p matrix}
+}
+\value{
+Symmetric, square p×p matrix
 }
 \description{
 Expand lower-triangular vector to full matrix
