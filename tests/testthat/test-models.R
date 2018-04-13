@@ -1,30 +1,27 @@
 library(magrittr)
 library(tibble)
+library(purrr)
 
 context("Models lists")
 
 vowels <- tribble(
-  ~Dialect, ~Vowel, ~F1, ~F2,
-  "Midland",  "ae",     799, 1927,
-  "Midland",  "ae",     714, 1974,
-  "Midland",  "ae",     718, 1893,
-  "Midland",  "ae",     676, 1817,
-  "Midland",  "ae",     743, 1886,
-  "Midland",  "eh",     629, 2064,
-  "Midland",  "eh",     615, 2036,
-  "Midland",  "eh",     631, 2090,
-  "Midland",  "eh",     628, 2114,
-  "Midland",  "eh",     642, 2072,
-  "North",    "ae",     702, 2126,
-  "North",    "ae",     773, 2158,
-  "North",    "ae",     800, 2153,
-  "North",    "ae",     646, 2255,
-  "North",    "ae",     700, 2280,
-  "North",    "eh",     771, 1980,
-  "North",    "eh",     797, 1976,
-  "North",    "eh",     804, 1910,
-  "North",    "eh",     800, 1960,
-  "North",    "eh",     756, 1979
+  ~Talker, ~Dialect,   ~Vowel,   ~F1, ~F2,
+  "M1",    "Midland",  "ae",     799, 1927,
+  "M1",    "Midland",  "ae",     714, 1974,
+  "M2",    "Midland",  "ae",     676, 1817,
+  "M2",    "Midland",  "ae",     743, 1886,
+  "M1",    "Midland",  "eh",     629, 2064,
+  "M1",    "Midland",  "eh",     631, 2090,
+  "M2",    "Midland",  "eh",     628, 2114,
+  "M2",    "Midland",  "eh",     642, 2072,
+  "N1",    "North",    "ae",     702, 2126,
+  "N1",    "North",    "ae",     773, 2158,
+  "N2",    "North",    "ae",     646, 2255,
+  "N2",    "North",    "ae",     700, 2280,
+  "N1",    "North",    "eh",     771, 1980,
+  "N1",    "North",    "eh",     804, 1910,
+  "N2",    "North",    "eh",     800, 1960,
+  "N2",    "North",    "eh",     756, 1979
 )
 
 
@@ -126,5 +123,33 @@ test_that("Multiply nested models' dimnames are extracted correctly", {
     model_matrix(vowels) %>%
     colnames %>%
     expect_equal('F2')
+
+})
+
+test_that("Train test splits", {
+  
+  vs_split <- vowels %>%
+    train_test_split(holdout="Talker")
+
+  expect_equal(colnames(vs_split), c("Talker", "data_train", "data_test"))
+  expect_length(vs_split$Talker, length(unique(vowels$Talker)))
+  expect_false(any(with(vs_split, map2_lgl(Talker, data_train, ~(.x %in% .y$Talker)))))
+
+  vs_split_grouped <- vowels %>% 
+    train_test_split(holdout="Talker", groups="Dialect")
+
+  expect_equal(colnames(vs_split_grouped), c("Talker", "data_train", "Dialect", "data_test"))
+  expect_length(vs_split_grouped$Talker, length(unique(vowels$Talker)))
+  expect_false(any(with(vs_split_grouped, map2_lgl(Talker, data_train, ~(.x %in% .y$Talker)))))
+
+  vs_split_grouped %>%
+    pull(data_train) %>%
+    map(groups) %>%
+    map(unlist) %>%
+    map(as.character) %>%
+    map_lgl(~ .x == "Dialect") %>%
+    all() %>%
+    expect_true()
+  
 
 })

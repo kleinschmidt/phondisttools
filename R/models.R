@@ -104,7 +104,7 @@ train_models_indexical_with_holdout <- function(d, groups, category, cues,
                                                 holdout='Talker',
                                                 ...) {
 
-  train <- partial(train_models, grouping = category, cues = cues, ...)
+  train <- purrr::partial(train_models, grouping = category, cues = cues, ...)
 
   # TODO: can be made much more efficient by only re-training the model for the
   # Matching dialect.
