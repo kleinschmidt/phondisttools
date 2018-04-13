@@ -24,13 +24,13 @@ lower_tri_to_full <- function(lower_tri_vec) {
 #' Calculate the KL divergence between two multivariate Gaussians
 #'
 #' @param mu1,mu2 mean vector of two distributions
-#' @param sigma1,sigma2 covariance matrix in lower triangular vector (see
-#'   \code{\link{lower_tri_to_full}}) or matrix form
+#' @param sigma1,sigma2 covariance matrix (or lower-triangular vectors)
 #'
 #' @export
 KL_mvnorm <- function(mu1, sigma1, mu2, sigma2) {
   assert_that(is.vector(mu1))
   assert_that(is.vector(mu2))
+  assert_that(length(mu1) == length(mu2))
 
   # variance-covariance matrix for Gaussian 1
   
@@ -47,7 +47,6 @@ KL_mvnorm <- function(mu1, sigma1, mu2, sigma2) {
 
   assert_that(is.matrix(Sigma1))
   assert_that(is.matrix(Sigma2))
-
 
   ## ------------------
   ## (Dividing by log(2) gives KL in bits)

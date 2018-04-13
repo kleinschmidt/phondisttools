@@ -9,8 +9,7 @@ KL_mvnorm(mu1, sigma1, mu2, sigma2)
 \arguments{
 \item{mu1, mu2}{mean vector of two distributions}
 
-\item{sigma1, sigma2}{covariance matrix in lower triangular vector (see
-\code{\link{lower_tri_to_full}}) or matrix form}
+\item{sigma1, sigma2}{covariance matrix (or lower-triangular vectors)}
 }
 \description{
 Calculate the KL divergence between two multivariate Gaussians
