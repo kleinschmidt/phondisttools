@@ -25,7 +25,7 @@ lower_tri_to_full <- function(lower_tri_vec) {
 #'
 #' @param mu1,mu2 mean vector of two distributions
 #' @param sigma1,sigma2 covariance matrix in lower triangular vector (see
-#'   \code{\link{covar2D}}) or matrix form
+#'   \code{\link{lower_tri_to_full}}) or matrix form
 #'
 #' @export
 KL_mvnorm <- function(mu1, sigma1, mu2, sigma2) {
