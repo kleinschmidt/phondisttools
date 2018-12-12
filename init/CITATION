@@ -1,0 +1,12 @@
+bibentry(
+  bibtype = "Article",
+  title = "Structure in talker variability: How much is there and how much can it help?",
+  volume = "34",
+  number = "1",
+  doi = "10.1080/23273798.2018.1500698",
+  journal = "Language, Cognition and Neuroscience",
+  author = person("Dave F.", "Kleinschmidt"),
+  year = "2019",
+  pages = "43-68",
+  textVersion = "Kleinschmidt, D. F. (2019). Structure in talker variability: How much is there and how much can it help? Language, Cognition and Neuroscience, 34(1), 43–68. https://doi.org/10.1080/23273798.2018.1500698"
+)
